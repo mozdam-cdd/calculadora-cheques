@@ -511,10 +511,16 @@
           <input type="date" class="data-cheque" value="${dataSug}">
         </div>
       </div>
-      <div class="field" style="margin-top:14px">
-        <label>Valor do Cheque (R$)</label>
-        <input type="text" class="valor-cheque" inputmode="decimal" placeholder="R$ 3.000,00"
-               oninput="mascaraMoeda(this)" onblur="mascaraMoedaBlur(this)" onfocus="mascaraMoedaFocus(this)">
+      <div class="row" style="margin-top:14px">
+        <div class="field">
+          <label>Valor do Cheque (R$)</label>
+          <input type="text" class="valor-cheque" inputmode="decimal" placeholder="R$ 3.000,00"
+                 oninput="mascaraMoeda(this)" onblur="mascaraMoedaBlur(this)" onfocus="mascaraMoedaFocus(this)">
+        </div>
+        <div class="field">
+          <label>Número do Cheque</label>
+          <input type="number" class="numero-cheque" inputmode="numeric" placeholder="Ex: 123456" step="1" min="0">
+        </div>
       </div>`;
     lista.appendChild(div);
   }
@@ -545,6 +551,7 @@
       const valorRaw = item.querySelector('.valor-cheque').dataset.raw || '0';
       const valor    = parseInt(valorRaw) / 100;
       const dataVenc = item.querySelector('.data-cheque').value;
+      const numero   = item.querySelector('.numero-cheque').value.trim();
 
       if (!dataBase) { alert(`Informe a data base do cheque #${i+1}.`); valido=false; return; }
       if (isNaN(valor) || valor <= 0 || !dataVenc) { alert(`Preencha cheque #${i+1}.`); valido=false; return; }
@@ -566,9 +573,10 @@
       const res = document.createElement('div');
       res.className = 'resultado-cheque';
       res.style.animationDelay = (delay*0.08)+'s';
+      const tituloCheque = numero ? `Cheque nº ${numero}` : `Cheque #${String(i+1).padStart(2,'0')}`;
       res.innerHTML = `
         <div class="res-header">
-          <div><div class="res-titulo">Cheque #${String(i+1).padStart(2,'0')} — ${dias} dias</div>
+          <div><div class="res-titulo">${tituloCheque} — ${dias} dias</div>
             <div class="res-valor-original">R$ ${fmt(valor)}</div></div>
           <div class="res-badge">${fmtData(dataVenc)}</div>
         </div>
