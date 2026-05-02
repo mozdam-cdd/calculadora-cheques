@@ -323,25 +323,19 @@
   <div class="card">
     <div class="card-title">Configurações Gerais</div>
 
-    <!-- Antecipação: data base + taxa -->
+    <!-- Antecipação: tipo + taxa + tarifa -->
     <div id="configAntecip" style="display:none">
-      <div class="row">
-        <div class="field">
-          <label>Data Base (hoje)</label>
-          <input type="date" id="dataBase">
-        </div>
-        <div class="field">
-          <label>Taxa de Juros (% a.m.)</label>
-          <input type="text" id="taxaMensal" inputmode="decimal" placeholder="Ex: 3,5">
-        </div>
+      <div class="field" style="margin-bottom:14px">
+        <label>Tipo de Cálculo</label>
+        <select id="tipoCalc">
+          <option value="simples">Juros Simples (Desconto Bancário)</option>
+          <option value="composto">Juros Compostos</option>
+        </select>
       </div>
       <div class="row">
         <div class="field">
-          <label>Tipo de Cálculo</label>
-          <select id="tipoCalc">
-            <option value="simples">Juros Simples (Desconto Bancário)</option>
-            <option value="composto">Juros Compostos</option>
-          </select>
+          <label>Taxa de Juros (% a.m.)</label>
+          <input type="text" id="taxaMensal" inputmode="decimal" placeholder="Ex: 3,5">
         </div>
         <div class="field">
           <label>Tarifa por Cheque (R$)</label>
@@ -470,6 +464,7 @@
       document.getElementById('configVenda').style.display   = 'none';
       document.getElementById('secaoAntecip').style.display  = '';
       document.getElementById('secaoVenda').style.display    = 'none';
+      if (!document.querySelectorAll('#listaCheques .cheque-item').length) addChequeAntecip();
     } else {
       document.body.classList.remove('modo-antecip');
       document.getElementById('btnV').classList.add('ativo');
@@ -494,24 +489,32 @@
     div.className = 'cheque-item';
     div.id = 'cheque-' + contadorCheque;
 
+    const hoje = new Date().toISOString().split('T')[0];
     const prazos = [30,60,90];
-    const sug = prazos[contadorCheque - 1] || 0;
-    let dataSug = '';
-    const db = document.getElementById('dataBase').value;
-    if (db && sug) {
-      const d = new Date(db + 'T12:00:00');
-      d.setDate(d.getDate() + sug);
-      dataSug = d.toISOString().split('T')[0];
-    }
+    const sug = prazos[contadorCheque - 1] || 30;
+    const d = new Date(hoje + 'T12:00:00');
+    d.setDate(d.getDate() + sug);
+    const dataSug = d.toISOString().split('T')[0];
 
     div.innerHTML = `
-      <div class="cheque-num">CHEQUE #${String(contadorCheque).padStart(2,'0')}</div>
-      <div class="cheque-row">
-        <div class="field"><label>Valor do Cheque (R$)</label>
-          <input type="number" class="valor-cheque" placeholder="Ex: 1500.00" step="0.01" min="0"></div>
-        <div class="field"><label>Vencimento</label>
-          <input type="date" class="data-cheque" value="${dataSug}"></div>
-        <button class="btn-remove" onclick="removerCheque(${contadorCheque})" title="Remover">×</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="cheque-num" style="margin:0">CHEQUE #${String(contadorCheque).padStart(2,'0')}</div>
+        <button class="btn-remove" style="width:32px;height:32px;font-size:16px;min-width:32px;min-height:32px" onclick="removerCheque(${contadorCheque})" title="Remover">×</button>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Data Base (hoje)</label>
+          <input type="date" class="data-base-cheque" value="${hoje}">
+        </div>
+        <div class="field">
+          <label>Data Vencimento (para)</label>
+          <input type="date" class="data-cheque" value="${dataSug}">
+        </div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label>Valor do Cheque (R$)</label>
+        <input type="text" class="valor-cheque" inputmode="decimal" placeholder="R$ 3.000,00"
+               oninput="mascaraMoeda(this)" onblur="mascaraMoedaBlur(this)" onfocus="mascaraMoedaFocus(this)">
       </div>`;
     lista.appendChild(div);
   }
@@ -522,28 +525,31 @@
   }
 
   function calcularAntecip() {
-    const dataBase   = document.getElementById('dataBase').value;
     const taxaMensal = parseDecimalBR(document.getElementById('taxaMensal').value);
     const tipoCalc   = document.getElementById('tipoCalc').value;
     const tarifa     = parseFloat(document.getElementById('tarifa').value) || 0;
 
-    if (!dataBase)                             { alert('Informe a data base.'); return; }
     if (isNaN(taxaMensal) || taxaMensal <= 0)  { alert('Informe a taxa de juros.'); return; }
 
     const items = document.querySelectorAll('#listaCheques .cheque-item');
     if (!items.length) { alert('Adicione ao menos um cheque.'); return; }
 
     const taxaDiaria = taxaMensal / 30 / 100;
-    const base = new Date(dataBase + 'T12:00:00');
     const resultDiv = document.getElementById('resultadosCheques');
     resultDiv.innerHTML = '';
 
     let totalRef = 0, totalJuros = 0, totalFinal = 0, valido = true, delay = 0;
 
     items.forEach((item, i) => {
-      const valor    = parseFloat(item.querySelector('.valor-cheque').value);
+      const dataBase = item.querySelector('.data-base-cheque').value;
+      const valorRaw = item.querySelector('.valor-cheque').dataset.raw || '0';
+      const valor    = parseInt(valorRaw) / 100;
       const dataVenc = item.querySelector('.data-cheque').value;
+
+      if (!dataBase) { alert(`Informe a data base do cheque #${i+1}.`); valido=false; return; }
       if (isNaN(valor) || valor <= 0 || !dataVenc) { alert(`Preencha cheque #${i+1}.`); valido=false; return; }
+
+      const base = new Date(dataBase + 'T12:00:00');
       const dias = Math.round((new Date(dataVenc+'T12:00:00') - base) / 86400000);
       if (dias <= 0) { alert(`Vencimento do cheque #${i+1} deve ser futuro.`); valido=false; return; }
 
@@ -776,9 +782,6 @@
   }
 
   window.onload = () => {
-    const hoje = new Date().toISOString().split('T')[0];
-    document.getElementById('dataBase').value = hoje;
-
     // Prazo padrão do 1º cheque = 30 dias
     document.getElementById('vPrazo1').value = 30;
 
