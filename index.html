@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Cheques Pré-datados</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --verde: #00c97a; --verde-escuro: #009b5c;
@@ -311,57 +312,7 @@
   .btn-imprimir-mini:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
   /* ─── RECIBO IMPRESSÃO ─── */
-  .recibo-print { display: none; }
-
-  @media print {
-    @page { size: 75mm 175mm; margin: 3mm; }
-
-    html, body {
-      margin: 0 !important; padding: 0 !important;
-      background: #fff !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    /* Esconde tudo do app (sem ocupar espaço) e mostra apenas o recibo */
-    body > *:not(.recibo-print) { display: none !important; }
-
-    .recibo-print {
-      display: block !important;
-      width: 69mm; max-width: 100%;
-      margin: 0 auto; padding: 2mm;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 8px; color: #000; line-height: 1.35;
-      background: #fff;
-    }
-    .recibo-print .rp-titulo {
-      font-size: 11px; font-weight: bold; text-align: center;
-      letter-spacing: 2px; text-transform: uppercase;
-    }
-    .recibo-print .rp-data {
-      text-align: center; font-size: 7px; color: #555; margin-bottom: 2mm;
-    }
-    .recibo-print .rp-info {
-      font-size: 7px; color: #555; text-align: center; margin: 0.5mm 0;
-    }
-    .recibo-print .rp-divider {
-      border-top: 1px solid #000; margin: 1.5mm 0;
-    }
-    .recibo-print .rp-item {
-      display: flex; justify-content: space-between; padding: 0.3mm 0;
-    }
-    .recibo-print .rp-label { color: #555; font-size: 7px; }
-    .recibo-print .rp-valor { font-weight: bold; text-align: right; }
-    .recibo-print .rp-resumo {
-      border-top: 1px solid #000; border-bottom: 1px solid #000;
-      padding: 1mm 0; margin: 1mm 0;
-    }
-    .recibo-print .rp-rodape {
-      text-align: center; font-size: 6px; color: #999;
-      margin-top: 1.5mm; padding-top: 1mm;
-      border-top: 1px dashed #ccc;
-    }
-    .recibo-print .rp-cheque { margin: 0.5mm 0; }
-  }
+  /* PDF gerado via jsPDF — sem dependência de @media print */
 </style>
 </head>
 <body>
@@ -512,13 +463,15 @@
     </div>
   </div>
 
+  <footer style="text-align:center;margin-top:32px;padding-top:18px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">
+    v1.002
+  </footer>
+
 </div><!-- /container -->
 
 <button id="btnImprimirRecibo" class="btn-imprimir" style="display:none" onclick="imprimirReciboAntecip()">
   🖨️ Imprimir Recibo
 </button>
-
-<div id="reciboPrint" class="recibo-print"></div>
 
 <script>
   let modo = 'venda';
@@ -538,7 +491,7 @@
       document.getElementById('btnV').classList.remove('ativo');
       document.getElementById('hLabel').textContent = 'Antecipação de Recebíveis';
       document.getElementById('hEm').textContent    = 'Desconto de Cheques';
-      document.getElementById('hSub').textContent   = 'Calcule o valor líquido após o desconto bancário ou de factoring';
+      document.getElementById('hSub').textContent   = 'Quanto você recebe ao antecipar seus cheques';
       document.getElementById('infoBox').innerHTML  = '<strong>Antecipação de Recebíveis:</strong> Você possui cheques a receber e quer o dinheiro hoje. O banco ou factoring desconta os juros e te repassa o valor líquido imediatamente.';
       document.getElementById('configAntecip').style.display = '';
       document.getElementById('configVenda').style.display   = 'none';
@@ -944,73 +897,179 @@
     };
   }
 
-  function montarReciboAntecipHTML() {
-    const d = dadosRecibo;
-    let html = '<div class="rp-titulo">Recibo de Antecipação</div>';
-    html += `<div class="rp-data">Gerado em ${d.data}</div>`;
-    html += `<div class="rp-info">Taxa: ${d.taxa}% a.m. (${d.tipoCalc}) — Tarifa: R$ ${fmt(parseFloat(d.tarifa)||0)} por cheque</div>`;
-    html += '<div class="rp-divider"></div>';
 
-    d.itens.forEach(ch => {
-      html += '<div class="rp-cheque">';
-      html += `<div class="rp-item"><span class="rp-label">CHEQUE${ch.numero ? ' N\u00ba ' + ch.numero : ''}</span><span class="rp-valor">R$ ${fmt(ch.valor)}</span></div>`;
-      html += `<div class="rp-item"><span class="rp-label">Vencimento</span><span>${fmtData(ch.dataVenc)} (${ch.dias} dias)</span></div>`;
-      html += '</div>';
-      html += '<div style="border-top:1px dotted #ccc;margin:0.5mm 0"></div>';
-    });
-
-    html += '<div class="rp-resumo">';
-    html += `<div class="rp-item"><span class="rp-label">TOTAL DOS CHEQUES</span><span class="rp-valor">${d.totalBruto}</span></div>`;
-    html += `<div class="rp-item"><span class="rp-label">TOTAL DESCONTADO</span><span class="rp-valor">${d.totalDesc}</span></div>`;
-    html += `<div class="rp-item"><span class="rp-label">VOCÊ RECEBE HOJE</span><span class="rp-valor">${d.totalLiq}</span></div>`;
-    html += '</div>';
-
-    html += '<div class="rp-rodape">Calculadora de Cheques Pré-datados</div>';
-    return html;
+  /* ─── PDF (jsPDF) ─── */
+  function sanePDF(s) {
+    return String(s).replace(/[‐-―−]/g, '-');
   }
 
-  function montarReciboVendaHTML() {
-    const d = dadosRecibo;
-    let html = '<div class="rp-titulo">Recibo - Venda a Prazo</div>';
-    html += `<div class="rp-data">Gerado em ${d.data}</div>`;
-    html += `<div class="rp-item"><span class="rp-label">VALOR À VISTA</span><span class="rp-valor">R$ ${fmt(d.vista)}</span></div>`;
-    html += `<div class="rp-info">Taxa: ${d.taxa || '—'}% a.m. (${d.tipoCalc})</div>`;
-    html += '<div class="rp-divider"></div>';
-    html += `<div class="rp-label" style="text-align:center;margin:1mm 0">${d.numParc}× CHEQUE${d.numParc>1?'S':''} — a cada 30 dias</div>`;
-
-    d.cheques.forEach(c => {
-      html += '<div class="rp-cheque">';
-      html += `<div style="display:flex;justify-content:space-between">`;
-      html += `<span style="font-weight:bold">#${String(c.k).padStart(2,'0')}</span>`;
-      html += `<span class="rp-valor">R$ ${fmt(c.vc)}</span>`;
-      html += `</div>`;
-      html += `<div style="display:flex;justify-content:space-between;font-size:7px;color:#555;margin-top:0.2mm">`;
-      html += `<span>Venc: ${fmtDataObj(c.dv)}</span>`;
-      html += `<span>${c.dias} dias</span>`;
-      html += `</div>`;
-      html += '</div>';
-      html += '<div style="border-top:1px dotted #eee;margin:0.5mm 0"></div>';
-    });
-
-    html += '<div class="rp-resumo">';
-    html += `<div class="rp-item"><span class="rp-label">TOTAL NOS CHEQUES</span><span class="rp-valor">R$ ${fmt(d.total)}</span></div>`;
-    html += `<div class="rp-item"><span class="rp-label">ACRÉSCIMO</span><span class="rp-valor">+R$ ${fmt(d.acrescimo)} (${d.pct}%)</span></div>`;
-    html += '</div>';
-
-    html += '<div class="rp-rodape">Calculadora de Cheques Pré-datados</div>';
-    return html;
+  function abrirPDF(doc, filename) {
+    try {
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, '_blank');
+      if (!win) doc.save(filename);
+    } catch (e) {
+      doc.save(filename);
+    }
   }
 
   function imprimirReciboAntecip() {
+    if (!window.jspdf) { alert('Biblioteca de PDF não carregou. Verifique a conexão.'); return; }
     gerarReciboAntecip();
-    document.getElementById('reciboPrint').innerHTML = montarReciboAntecipHTML();
-    window.print();
+    if (!dadosRecibo) return;
+    const d = dadosRecibo;
+
+    const { jsPDF } = window.jspdf;
+    const W = 75, H = 175, M = 3;
+    const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
+    const cx = W / 2, left = M, right = W - M;
+    let y = M + 2;
+
+    function checkPage(needed) {
+      if (y + needed > H - M) { doc.addPage(); y = M + 2; }
+    }
+    function divider(gray) {
+      doc.setDrawColor(gray !== undefined ? gray : 0);
+      doc.setLineWidth(0.2);
+      doc.line(left, y, right, y);
+    }
+
+    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+    doc.text('RECIBO DE ANTECIPAÇÃO', cx, y, { align: 'center' });
+    y += 4.5;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text(`Gerado em ${d.data}`, cx, y, { align: 'center' });
+    y += 3.2;
+
+    doc.text(`Taxa: ${d.taxa}% a.m. (${d.tipoCalc})`, cx, y, { align: 'center' });
+    y += 2.8;
+    doc.text(`Tarifa: R$ ${fmt(parseFloat(d.tarifa) || 0)} por cheque`, cx, y, { align: 'center' });
+    y += 3.5;
+
+    divider(); y += 3;
+
+    d.itens.forEach(ch => {
+      checkPage(8);
+      doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
+      const labelCheque = `CHEQUE${ch.numero ? ' Nº ' + ch.numero : ''}`;
+      doc.text(labelCheque, left, y);
+      doc.text(`R$ ${fmt(ch.valor)}`, right, y, { align: 'right' });
+      y += 3;
+
+      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+      doc.text('Vencimento', left, y);
+      doc.text(`${fmtData(ch.dataVenc)} (${ch.dias}d)`, right, y, { align: 'right' });
+      y += 2.5;
+
+      divider(220); y += 2.5;
+    });
+
+    y += 0.3; divider(); y += 3.4;
+
+    function resumo(label, valor) {
+      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+      doc.text(label, left, y);
+      doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+      doc.text(sanePDF(valor), right, y, { align: 'right' });
+      y += 3.4;
+    }
+    resumo('TOTAL DOS CHEQUES', d.totalBruto);
+    resumo('TOTAL DESCONTADO', d.totalDesc);
+    resumo('VOCÊ RECEBE HOJE', d.totalLiq);
+
+    y += 0.3; divider(); y += 3.5;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
+    doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
+    y += 2.5;
+    doc.text('v1.002', cx, y, { align: 'center' });
+
+    abrirPDF(doc, 'recibo-antecipacao.pdf');
   }
 
   function imprimirReciboVenda(idx) {
+    if (!window.jspdf) { alert('Biblioteca de PDF não carregou. Verifique a conexão.'); return; }
     gerarReciboVenda(idx);
-    document.getElementById('reciboPrint').innerHTML = montarReciboVendaHTML();
-    window.print();
+    if (!dadosRecibo) return;
+    const d = dadosRecibo;
+
+    const { jsPDF } = window.jspdf;
+    const W = 75, H = 175, M = 3;
+    const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
+    const cx = W / 2, left = M, right = W - M;
+    let y = M + 2;
+
+    function checkPage(needed) {
+      if (y + needed > H - M) { doc.addPage(); y = M + 2; }
+    }
+    function divider(gray) {
+      doc.setDrawColor(gray !== undefined ? gray : 0);
+      doc.setLineWidth(0.2);
+      doc.line(left, y, right, y);
+    }
+
+    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+    doc.text('RECIBO - VENDA A PRAZO', cx, y, { align: 'center' });
+    y += 4.5;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text(`Gerado em ${d.data}`, cx, y, { align: 'center' });
+    y += 4;
+
+    doc.text('VALOR À VISTA', left, y);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+    doc.text(`R$ ${fmt(d.vista)}`, right, y, { align: 'right' });
+    y += 3.5;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text(`Taxa: ${d.taxa || '-'}% a.m. (${d.tipoCalc})`, cx, y, { align: 'center' });
+    y += 3.5;
+
+    divider(); y += 3;
+
+    doc.setFont('courier', 'bold'); doc.setFontSize(7.5); doc.setTextColor(85);
+    doc.text(`${d.numParc}x CHEQUE${d.numParc > 1 ? 'S' : ''} - a cada 30 dias`, cx, y, { align: 'center' });
+    y += 3.5;
+
+    d.cheques.forEach(c => {
+      checkPage(8);
+      doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
+      doc.text(`#${String(c.k).padStart(2, '0')}`, left, y);
+      doc.text(`R$ ${fmt(c.vc)}`, right, y, { align: 'right' });
+      y += 3;
+
+      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+      doc.text(`Venc: ${fmtDataObj(c.dv)}`, left, y);
+      doc.text(`${c.dias} dias`, right, y, { align: 'right' });
+      y += 2.5;
+
+      divider(220); y += 2.5;
+    });
+
+    y += 0.3; divider(); y += 3.4;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text('TOTAL NOS CHEQUES', left, y);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+    doc.text(`R$ ${fmt(d.total)}`, right, y, { align: 'right' });
+    y += 3.4;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text('ACRÉSCIMO', left, y);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+    doc.text(`+R$ ${fmt(d.acrescimo)} (${d.pct}%)`, right, y, { align: 'right' });
+    y += 3.4;
+
+    y += 0.3; divider(); y += 3.5;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
+    doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
+    y += 2.5;
+    doc.text('v1.002', cx, y, { align: 'center' });
+
+    abrirPDF(doc, 'recibo-venda-a-prazo.pdf');
   }
 
   window.onload = () => {
