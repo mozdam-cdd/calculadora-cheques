@@ -290,6 +290,79 @@
     }
     .vres-resp-block .vres-footer > div:last-child { font-size: 16px !important; }
   }
+
+  /* ─── BOTÃO IMPRIMIR ─── */
+  .btn-imprimir {
+    width: 100%; background: transparent;
+    border: 2px dashed var(--accent-borda); border-radius: 12px;
+    color: var(--accent); font-family: 'Sora', sans-serif;
+    font-size: 15px; font-weight: 600; padding: 14px;
+    cursor: pointer; transition: all .2s; margin-top: 18px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-imprimir:hover { border-color: var(--accent); background: var(--accent-bg); }
+
+  .btn-imprimir-mini {
+    background: transparent; border: 1px solid var(--cinza-borda);
+    border-radius: 6px; color: var(--texto-suave); font-size: 14px;
+    padding: 6px 10px; cursor: pointer; transition: all .2s;
+    font-family: 'Sora', sans-serif; line-height: 1;
+  }
+  .btn-imprimir-mini:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+
+  /* ─── RECIBO IMPRESSÃO ─── */
+  .recibo-print { display: none; }
+
+  @media print {
+    @page { size: 75mm 175mm; margin: 3mm; }
+
+    html, body {
+      width: 100% !important; height: 100% !important;
+      margin: 0 !important; padding: 0 !important;
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body * { visibility: hidden !important; }
+    .recibo-print, .recibo-print * { visibility: visible !important; }
+
+    .recibo-print {
+      display: block !important;
+      position: absolute; top: 0; left: 0;
+      width: 69mm; padding: 2mm;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 8px; color: #000; line-height: 1.35;
+      background: #fff;
+    }
+    .recibo-print .rp-titulo {
+      font-size: 11px; font-weight: bold; text-align: center;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .recibo-print .rp-data {
+      text-align: center; font-size: 7px; color: #555; margin-bottom: 2mm;
+    }
+    .recibo-print .rp-info {
+      font-size: 7px; color: #555; text-align: center; margin: 0.5mm 0;
+    }
+    .recibo-print .rp-divider {
+      border-top: 1px solid #000; margin: 1.5mm 0;
+    }
+    .recibo-print .rp-item {
+      display: flex; justify-content: space-between; padding: 0.3mm 0;
+    }
+    .recibo-print .rp-label { color: #555; font-size: 7px; }
+    .recibo-print .rp-valor { font-weight: bold; text-align: right; }
+    .recibo-print .rp-resumo {
+      border-top: 1px solid #000; border-bottom: 1px solid #000;
+      padding: 1mm 0; margin: 1mm 0;
+    }
+    .recibo-print .rp-rodape {
+      text-align: center; font-size: 6px; color: #999;
+      margin-top: 1.5mm; padding-top: 1mm;
+      border-top: 1px dashed #ccc;
+    }
+    .recibo-print .rp-cheque { margin: 0.5mm 0; }
+  }
 </style>
 </head>
 <body>
@@ -441,6 +514,13 @@
   </div>
 
 </div><!-- /container -->
+
+<button id="btnImprimirRecibo" class="btn-imprimir" style="display:none" onclick="imprimirReciboAntecip()">
+  🖨️ Imprimir Recibo
+</button>
+
+<div id="reciboPrint" class="recibo-print"></div>
+
 <script>
   let modo = 'venda';
   let contadorCheque = 0;
@@ -451,6 +531,7 @@
     modo = m;
     document.getElementById('resultadosAntecip').style.display = 'none';
     document.getElementById('resultadosVenda').style.display   = 'none';
+    document.getElementById('btnImprimirRecibo').style.display = 'none';
 
     if (m === 'antecip') {
       document.body.classList.add('modo-antecip');
@@ -605,6 +686,11 @@
     const sec = document.getElementById('resultadosAntecip');
     sec.style.display = 'block';
     sec.scrollIntoView({behavior:'smooth', block:'start'});
+
+    const btnImp = document.getElementById('btnImprimirRecibo');
+    btnImp.style.display = '';
+    btnImp.onclick = imprimirReciboAntecip;
+    btnImp.textContent = '🖨️ Imprimir Recibo';
   }
 
   /* ─── VENDA A PRAZO: tabela de parcelas ─── */
@@ -719,6 +805,7 @@
             <div class="vres-parcelas" style="margin-bottom:4px">${numParc}× CHEQUE${numParc>1?'S':''}</div>
             <div style="font-size:13px;color:var(--texto-suave)">À vista: <strong style="color:var(--texto)">R$ ${fmt(vista)}</strong></div>
           </div>
+          <button class="btn-imprimir-mini" onclick="imprimirReciboVenda(${idx})" title="Imprimir este plano">🖨️</button>
         </div>
         <table class="vres-table">
           <thead><tr>
@@ -743,6 +830,8 @@
     document.getElementById('resultadosVenda').style.display = 'block';
     document.getElementById('vTotalizador').style.display    = 'none';
     document.getElementById('resultadosVenda').scrollIntoView({behavior:'smooth',block:'start'});
+
+    document.getElementById('btnImprimirRecibo').style.display = 'none';
   }
 
   /* ─── UTILS ─── */
@@ -787,6 +876,142 @@
   function getValorVista() {
     const raw = document.getElementById('vValorVista').dataset.raw || '0';
     return parseFloat(raw) / 100;
+  }
+
+  /* ─── IMPRIMIR RECIBO ─── */
+  let dadosRecibo = null;
+
+  function gerarReciboAntecip() {
+    const itens = [];
+    document.querySelectorAll('#listaCheques .cheque-item').forEach((item) => {
+      const dataVenc = item.querySelector('.data-cheque').value;
+      const dataBase = item.querySelector('.data-base-cheque').value;
+      const valorRaw = item.querySelector('.valor-cheque').dataset.raw || '0';
+      const valor    = parseInt(valorRaw) / 100;
+      const numero   = item.querySelector('.numero-cheque').value.trim();
+      if (!dataBase || !dataVenc || valor <= 0) return;
+      const base = new Date(dataBase + 'T12:00:00');
+      const dias = Math.round((new Date(dataVenc + 'T12:00:00') - base) / 86400000);
+      itens.push({ valor, dataVenc, dias, numero });
+    });
+
+    const taxaMensal = document.getElementById('taxaMensal').value;
+    const tipoCalc = document.getElementById('tipoCalc').value === 'simples' ? 'Simples' : 'Composto';
+    const tarifa = document.getElementById('tarifa').value || '0';
+
+    dadosRecibo = {
+      tipo: 'antecip',
+      data: new Date().toLocaleDateString('pt-BR'),
+      taxa: taxaMensal, tipoCalc, tarifa, itens,
+      totalBruto: document.getElementById('atvBruto').textContent,
+      totalDesc: document.getElementById('atvDesc').textContent,
+      totalLiq: document.getElementById('atvLiq').textContent
+    };
+  }
+
+  function gerarReciboVenda(idx) {
+    const vista = getValorVista();
+    const prazo1 = parseInt(document.getElementById('vPrazo1').value) || 30;
+    const taxa = document.getElementById('vTaxa').value;
+    const tipo = document.getElementById('vTipoCalc').value === 'simples' ? 'Simples' : 'Composto';
+    const rows = document.querySelectorAll('.parcela-row');
+    const row = rows[idx];
+    if (!row) return;
+    const numParc = parseInt(row.querySelector('.parcela-badge').textContent);
+    const hoje = new Date(); hoje.setHours(12, 0, 0, 0);
+    const d1 = new Date(hoje); d1.setDate(d1.getDate() + prazo1);
+    const valorPorCheque = vista / numParc;
+    const taxaDiaria = parseDecimalBR(taxa) / 30 / 100;
+
+    const cheques = [];
+    let total = 0;
+    for (let k = 0; k < numParc; k++) {
+      const dv = new Date(d1);
+      dv.setDate(dv.getDate() + k * 30);
+      const dias = Math.round((dv - hoje) / 86400000);
+      const vc = tipo === 'Simples'
+        ? valorPorCheque * (1 + taxaDiaria * dias)
+        : valorPorCheque * Math.pow(1 + taxaDiaria, dias);
+      total += vc;
+      cheques.push({ k: k + 1, dv, dias, vc });
+    }
+
+    dadosRecibo = {
+      tipo: 'venda',
+      data: new Date().toLocaleDateString('pt-BR'),
+      vista, taxa, tipoCalc: tipo, numParc, cheques, total,
+      acrescimo: total - vista,
+      pct: ((total - vista) / vista * 100).toFixed(2)
+    };
+  }
+
+  function montarReciboAntecipHTML() {
+    const d = dadosRecibo;
+    let html = '<div class="rp-titulo">Recibo de Antecipação</div>';
+    html += `<div class="rp-data">Gerado em ${d.data}</div>`;
+    html += `<div class="rp-info">Taxa: ${d.taxa}% a.m. (${d.tipoCalc}) — Tarifa: R$ ${fmt(parseFloat(d.tarifa)||0)} por cheque</div>`;
+    html += '<div class="rp-divider"></div>';
+
+    d.itens.forEach(ch => {
+      html += '<div class="rp-cheque">';
+      html += `<div class="rp-item"><span class="rp-label">CHEQUE${ch.numero ? ' N\u00ba ' + ch.numero : ''}</span><span class="rp-valor">R$ ${fmt(ch.valor)}</span></div>`;
+      html += `<div class="rp-item"><span class="rp-label">Vencimento</span><span>${fmtData(ch.dataVenc)} (${ch.dias} dias)</span></div>`;
+      html += '</div>';
+      html += '<div style="border-top:1px dotted #ccc;margin:0.5mm 0"></div>';
+    });
+
+    html += '<div class="rp-resumo">';
+    html += `<div class="rp-item"><span class="rp-label">TOTAL DOS CHEQUES</span><span class="rp-valor">${d.totalBruto}</span></div>`;
+    html += `<div class="rp-item"><span class="rp-label">TOTAL DESCONTADO</span><span class="rp-valor">${d.totalDesc}</span></div>`;
+    html += `<div class="rp-item"><span class="rp-label">VOCÊ RECEBE HOJE</span><span class="rp-valor">${d.totalLiq}</span></div>`;
+    html += '</div>';
+
+    html += '<div class="rp-rodape">Calculadora de Cheques Pré-datados</div>';
+    return html;
+  }
+
+  function montarReciboVendaHTML() {
+    const d = dadosRecibo;
+    let html = '<div class="rp-titulo">Recibo - Venda a Prazo</div>';
+    html += `<div class="rp-data">Gerado em ${d.data}</div>`;
+    html += `<div class="rp-item"><span class="rp-label">VALOR À VISTA</span><span class="rp-valor">R$ ${fmt(d.vista)}</span></div>`;
+    html += `<div class="rp-info">Taxa: ${d.taxa || '—'}% a.m. (${d.tipoCalc})</div>`;
+    html += '<div class="rp-divider"></div>';
+    html += `<div class="rp-label" style="text-align:center;margin:1mm 0">${d.numParc}× CHEQUE${d.numParc>1?'S':''} — a cada 30 dias</div>`;
+
+    d.cheques.forEach(c => {
+      html += '<div class="rp-cheque">';
+      html += `<div style="display:flex;justify-content:space-between">`;
+      html += `<span style="font-weight:bold">#${String(c.k).padStart(2,'0')}</span>`;
+      html += `<span class="rp-valor">R$ ${fmt(c.vc)}</span>`;
+      html += `</div>`;
+      html += `<div style="display:flex;justify-content:space-between;font-size:7px;color:#555;margin-top:0.2mm">`;
+      html += `<span>Venc: ${fmtDataObj(c.dv)}</span>`;
+      html += `<span>${c.dias} dias</span>`;
+      html += `</div>`;
+      html += '</div>';
+      html += '<div style="border-top:1px dotted #eee;margin:0.5mm 0"></div>';
+    });
+
+    html += '<div class="rp-resumo">';
+    html += `<div class="rp-item"><span class="rp-label">TOTAL NOS CHEQUES</span><span class="rp-valor">R$ ${fmt(d.total)}</span></div>`;
+    html += `<div class="rp-item"><span class="rp-label">ACRÉSCIMO</span><span class="rp-valor">+R$ ${fmt(d.acrescimo)} (${d.pct}%)</span></div>`;
+    html += '</div>';
+
+    html += '<div class="rp-rodape">Calculadora de Cheques Pré-datados</div>';
+    return html;
+  }
+
+  function imprimirReciboAntecip() {
+    gerarReciboAntecip();
+    document.getElementById('reciboPrint').innerHTML = montarReciboAntecipHTML();
+    window.print();
+  }
+
+  function imprimirReciboVenda(idx) {
+    gerarReciboVenda(idx);
+    document.getElementById('reciboPrint').innerHTML = montarReciboVendaHTML();
+    window.print();
   }
 
   window.onload = () => {
