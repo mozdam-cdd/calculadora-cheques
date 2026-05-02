@@ -464,7 +464,7 @@
   </div>
 
   <footer style="text-align:center;margin-top:32px;padding-top:18px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">
-    v1.002
+    v1.003
   </footer>
 
 </div><!-- /container -->
@@ -844,7 +844,7 @@
       if (!dataBase || !dataVenc || valor <= 0) return;
       const base = new Date(dataBase + 'T12:00:00');
       const dias = Math.round((new Date(dataVenc + 'T12:00:00') - base) / 86400000);
-      itens.push({ valor, dataVenc, dias, numero });
+      itens.push({ valor, dataBase, dataVenc, dias, numero });
     });
 
     const taxaMensal = document.getElementById('taxaMensal').value;
@@ -951,7 +951,7 @@
     divider(); y += 3;
 
     d.itens.forEach(ch => {
-      checkPage(8);
+      checkPage(11);
       doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
       const labelCheque = `CHEQUE${ch.numero ? ' Nº ' + ch.numero : ''}`;
       doc.text(labelCheque, left, y);
@@ -959,6 +959,10 @@
       y += 3;
 
       doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+      doc.text('Data Base', left, y);
+      doc.text(`${fmtData(ch.dataBase)}`, right, y, { align: 'right' });
+      y += 2.5;
+
       doc.text('Vencimento', left, y);
       doc.text(`${fmtData(ch.dataVenc)} (${ch.dias}d)`, right, y, { align: 'right' });
       y += 2.5;
@@ -984,7 +988,7 @@
     doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
     doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
     y += 2.5;
-    doc.text('v1.002', cx, y, { align: 'center' });
+    doc.text('v1.003', cx, y, { align: 'center' });
 
     abrirPDF(doc, 'recibo-antecipacao.pdf');
   }
@@ -1067,7 +1071,7 @@
     doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
     doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
     y += 2.5;
-    doc.text('v1.002', cx, y, { align: 'center' });
+    doc.text('v1.003', cx, y, { align: 'center' });
 
     abrirPDF(doc, 'recibo-venda-a-prazo.pdf');
   }
