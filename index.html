@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Cheques Pré-datados</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #00c97a; --verde-escuro: #009b5c;
+    --azul: #4d9fff;  --azul-escuro: #2d7fe0;
+    --preto: #0a0f0d; --cinza-escuro: #131a16;
+    --cinza: #1e2921; --cinza-borda: #2d3d33;
+    --texto: #e8f5ee; --texto-suave: #7a9e87;
+    --amarelo: #f5c842; --vermelho: #ff5e5e;
+    --accent: var(--verde); --accent-escuro: var(--verde-escuro);
+    --accent-bg: rgba(0,201,122,0.12); --accent-borda: rgba(0,201,122,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--preto); color: var(--texto);
+    font-family: 'Sora', sans-serif; min-height: 100vh; padding: 24px 16px 60px;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,201,122,0.1) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,201,122,0.025) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,201,122,0.025) 40px);
+  }
+  body.modo-venda {
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(77,159,255,0.1) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px);
+    --accent: var(--azul); --accent-escuro: var(--azul-escuro);
+    --accent-bg: rgba(77,159,255,0.12); --accent-borda: rgba(77,159,255,0.25);
+  }
+
+  .container { max-width: 700px; margin: 0 auto; }
+
+  /* HEADER */
+  header { text-align: center; margin-bottom: 28px; }
+  header .label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--accent); margin-bottom:10px; opacity:.8; }
+  header h1 { font-family:'DM Serif Display',serif; font-size:clamp(24px,5.5vw,38px); line-height:1.1; }
+  header h1 em { font-style:italic; color:var(--accent); }
+  header p { margin-top:8px; font-size:13px; color:var(--texto-suave); font-weight:300; }
+
+  /* TOGGLE */
+  .toggle-wrap { display:flex; background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:14px; padding:5px; margin-bottom:20px; gap:4px; }
+  .toggle-btn { flex:1; padding:12px 8px; border:none; border-radius:10px; background:transparent; color:var(--texto-suave); font-family:'Sora',sans-serif; cursor:pointer; transition:all .25s; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .toggle-btn .tb-icon { font-size:20px; }
+  .toggle-btn .tb-title { font-size:13px; font-weight:700; }
+  .toggle-btn .tb-sub { font-size:10px; font-weight:400; opacity:.65; }
+  .toggle-btn.ativo { background:var(--accent); color:var(--preto); }
+
+  /* INFO BOX */
+  .info-box { background:var(--accent-bg); border:1px solid var(--accent-borda); border-radius:10px; padding:11px 15px; font-size:12px; color:var(--texto-suave); line-height:1.6; margin-bottom:18px; }
+  .info-box strong { color:var(--accent); }
+
+  /* CARD */
+  .card { background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:16px; padding:22px; margin-bottom:18px; }
+  .card-title { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+  .card-title::before { content:''; display:inline-block; width:6px; height:6px; background:var(--accent); border-radius:50%; }
+
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .row:last-child { margin-bottom:0; }
+  .row.cols3 { grid-template-columns:1fr 1fr 1fr; }
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label { font-size:11px; color:var(--texto-suave); font-weight:600; letter-spacing:.5px; }
+  .field input, .field select {
+    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:10px;
+    padding:11px 13px; color:var(--texto); font-family:'DM Mono',monospace; font-size:14px;
+    outline:none; transition:border-color .2s,box-shadow .2s; width:100%;
+  }
+  .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
+  .field input::placeholder { color:var(--texto-suave); opacity:.45; }
+
+  /* ── ANTECIPAÇÃO: cheques livres ── */
+  #secaoAntecip { display:block; }
+  #secaoVenda   { display:none; }
+  body.modo-venda #secaoAntecip { display:none; }
+  body.modo-venda #secaoVenda   { display:block; }
+
+  .cheques-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .btn-add { background:transparent; border:1px dashed var(--cinza-borda); border-radius:8px; color:var(--accent); font-family:'Sora',sans-serif; font-size:13px; font-weight:600; padding:8px 14px; cursor:pointer; transition:all .2s; }
+  .btn-add:hover { border-color:var(--accent); background:var(--accent-bg); }
+
+  .cheque-item { background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:12px; padding:14px; margin-bottom:10px; transition:border-color .2s; }
+  .cheque-item:hover { border-color:var(--accent-borda); }
+  .cheque-num { font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:2px; margin-bottom:10px; }
+  .cheque-row { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
+
+  .btn-remove { background:transparent; border:1px solid rgba(255,94,94,.3); border-radius:8px; color:var(--vermelho); font-size:18px; width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+  .btn-remove:hover { background:rgba(255,94,94,.1); border-color:var(--vermelho); }
+
+  /* ── VENDA A PRAZO: tabela de parcelas ── */
+  .parcelas-table { width:100%; border-collapse:collapse; }
+
+  /* Cabeçalho da tabela */
+  .parcelas-table thead tr th {
+    font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--texto-suave); font-weight:500;
+    padding:0 10px 10px; text-align:left;
+  }
+  .parcelas-table thead tr th:last-child { width:44px; }
+
+  /* Linhas */
+  .parcela-row td { padding:5px 6px; vertical-align:middle; }
+  .parcela-row:last-child td { padding-bottom:0; }
+
+  /* Badge de parcelas */
+  .parcela-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--accent-bg); border:1px solid var(--accent-borda);
+    color:var(--accent); font-family:'DM Mono',monospace; font-size:12px; font-weight:600;
+    border-radius:8px; padding:0 10px; height:40px; white-space:nowrap; min-width:52px;
+  }
+
+  /* Resultado calculado na linha */
+  .parcela-resultado {
+    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:8px;
+    padding:0 12px; height:40px; display:flex; align-items:center;
+    font-family:'DM Mono',monospace; font-size:13px; color:var(--texto-suave);
+    white-space:nowrap;
+  }
+  .parcela-resultado.calculado { color:var(--azul); border-color:var(--accent-borda); }
+
+  /* Botão + adicionar parcela */
+  .btn-add-parcela {
+    margin-top:14px; width:100%; background:transparent;
+    border:1px dashed var(--cinza-borda); border-radius:10px;
+    color:var(--accent); font-family:'Sora',sans-serif; font-size:13px; font-weight:600;
+    padding:11px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-add-parcela:hover { border-color:var(--accent); background:var(--accent-bg); }
+
+  /* BOTÃO CALCULAR */
+  .btn-calcular { width:100%; background:var(--accent); color:var(--preto); border:none; border-radius:12px; padding:15px; font-family:'Sora',sans-serif; font-size:16px; font-weight:700; letter-spacing:.5px; cursor:pointer; transition:all .2s; margin-top:4px; }
+  .btn-calcular:hover { filter:brightness(.88); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .btn-calcular:active { transform:translateY(0); }
+
+  /* RESULTADOS ANTECIPAÇÃO */
+  #resultadosAntecip { display:none; }
+  .resultado-cheque { background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:14px; padding:18px; margin-bottom:14px; animation:fadeUp .4s ease forwards; opacity:0; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .res-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--cinza-borda); }
+  .res-titulo { font-size:12px; color:var(--texto-suave); font-weight:600; }
+  .res-valor-original { font-family:'DM Serif Display',serif; font-size:20px; }
+  .res-badge { font-family:'DM Mono',monospace; font-size:11px; background:var(--accent-bg); border:1px solid var(--accent-borda); color:var(--accent); padding:4px 10px; border-radius:20px; white-space:nowrap; }
+  .res-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .res-item .res-label { font-size:11px; color:var(--texto-suave); margin-bottom:3px; font-weight:600; }
+  .res-item .res-num { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; }
+
+  /* RESULTADOS VENDA */
+  #resultadosVenda { display:none; }
+  .vres-table { width:100%; border-collapse:collapse; margin-top:4px; }
+  .vres-table thead th { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--texto-suave); padding:0 12px 10px; text-align:left; }
+  .vres-row { border-bottom:1px solid var(--cinza-borda); }
+  .vres-row:last-child { border-bottom:none; }
+  .vres-row td { padding:12px; }
+  .vres-parcelas { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); font-weight:700; }
+  .vres-datas { font-size:11px; color:var(--texto-suave); line-height:1.7; }
+  .vres-cada { font-family:'DM Mono',monospace; font-size:14px; color:var(--amarelo); }
+  .vres-total { font-family:'DM Mono',monospace; font-size:15px; color:var(--azul); font-weight:700; }
+  .vres-acrescimo { font-size:11px; color:var(--texto-suave); }
+
+  /* TOTALIZADOR */
+  .totalizador { background:linear-gradient(135deg,var(--accent-bg),transparent); border:1px solid var(--accent-borda); border-radius:16px; padding:22px; margin-top:8px; animation:fadeUp .5s .1s ease forwards; opacity:0; }
+  .total-row { display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; text-align:center; }
+  .divider { background:var(--cinza-borda); }
+  .total-item { padding:0 14px; }
+  .total-item .tl { font-size:10px; color:var(--texto-suave); font-weight:600; letter-spacing:.5px; margin-bottom:6px; }
+  .total-item .tv { font-family:'DM Serif Display',serif; font-size:clamp(17px,3.5vw,24px); }
+  .nota { margin-top:18px; font-size:12px; color:var(--texto-suave); text-align:center; line-height:1.6; }
+
+  .clr-verde   { color:var(--verde)!important; }
+  .clr-azul    { color:var(--azul)!important; }
+  .clr-vermelho{ color:var(--vermelho)!important; }
+  .clr-amarelo { color:var(--amarelo)!important; }
+  .clr-branco  { color:var(--texto)!important; }
+
+  @media(max-width:520px){
+    .toggle-btn .tb-sub{display:none}
+    .row{grid-template-columns:1fr}
+    .row.cols3{grid-template-columns:1fr 1fr}
+    .cheque-row{grid-template-columns:1fr 1fr}
+    .cheque-row .btn-remove{grid-column:2;justify-self:end}
+    .res-grid{grid-template-columns:1fr 1fr}
+    .total-row{grid-template-columns:1fr;gap:14px}
+    .divider{display:none}
+    .total-item{padding:0}
+    .vres-table thead{display:none}
+    .vres-row td{display:block;padding:6px 12px}
+    .vres-row td:first-child{padding-top:12px}
+    .vres-row td:last-child{padding-bottom:12px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="label" id="hLabel">Antecipação de Recebíveis</div>
+    <h1>Calculadora de<br><em id="hEm">Cheques Pré-datados</em></h1>
+    <p id="hSub">Calcule o valor líquido após o desconto bancário ou de factoring</p>
+  </header>
+
+  <!-- TOGGLE -->
+  <div class="toggle-wrap">
+    <button class="toggle-btn ativo" id="btnA" onclick="setModo('antecip')">
+      <span class="tb-icon">🏦</span>
+      <span class="tb-title">Antecipação</span>
+      <span class="tb-sub">Tenho cheques, quero dinheiro agora</span>
+    </button>
+    <button class="toggle-btn" id="btnV" onclick="setModo('venda')">
+      <span class="tb-icon">🛒</span>
+      <span class="tb-title">Venda a Prazo</span>
+      <span class="tb-sub">Vendo produto e quero embutir os juros</span>
+    </button>
+  </div>
+
+  <div class="info-box" id="infoBox">
+    <strong>Antecipação de Recebíveis:</strong> Você possui cheques a receber e quer o dinheiro hoje. O banco ou factoring desconta os juros e te repassa o valor líquido imediatamente.
+  </div>
+
+  <!-- ══ CONFIG GERAL ══ -->
+  <div class="card">
+    <div class="card-title">Configurações Gerais</div>
+
+    <!-- Antecipação: data base + taxa -->
+    <div id="configAntecip">
+      <div class="row">
+        <div class="field">
+          <label>Data Base (hoje)</label>
+          <input type="date" id="dataBase">
+        </div>
+        <div class="field">
+          <label>Taxa de Juros (% a.m.)</label>
+          <input type="number" id="taxaMensal" placeholder="Ex: 3.5" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Tipo de Cálculo</label>
+          <select id="tipoCalc">
+            <option value="simples">Juros Simples (Desconto Bancário)</option>
+            <option value="composto">Juros Compostos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tarifa por Cheque (R$)</label>
+          <input type="number" id="tarifa" placeholder="Ex: 8.00" step="0.01" min="0" value="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Venda: valor à vista + data 1º cheque + taxa -->
+    <div id="configVenda" style="display:none">
+      <div class="row cols3">
+        <div class="field">
+          <label>Valor Total à Vista (R$)</label>
+          <input type="number" id="vValorVista" placeholder="Ex: 3000.00" step="0.01" min="0">
+        </div>
+        <div class="field">
+          <label>Data do 1º Cheque</label>
+          <input type="date" id="vData1">
+        </div>
+        <div class="field">
+          <label>Taxa de Juros (% a.m.)</label>
+          <input type="number" id="vTaxa" placeholder="Ex: 3.5" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Tipo de Cálculo</label>
+          <select id="vTipoCalc">
+            <option value="simples">Juros Simples</option>
+            <option value="composto">Juros Compostos</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Intervalo entre cheques</label>
+          <select id="vIntervalo">
+            <option value="30">30 dias</option>
+            <option value="15">15 dias</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SEÇÃO ANTECIPAÇÃO: cheques individuais ══ -->
+  <div id="secaoAntecip">
+    <div class="card">
+      <div class="cheques-header">
+        <div class="card-title" style="margin:0">Cheques a Antecipar</div>
+        <button class="btn-add" onclick="addChequeAntecip()">+ Adicionar</button>
+      </div>
+      <div id="listaCheques"></div>
+    </div>
+    <button class="btn-calcular" onclick="calcularAntecip()">Calcular Desconto →</button>
+  </div>
+
+  <!-- ══ SEÇÃO VENDA A PRAZO: tabela de opções ══ -->
+  <div id="secaoVenda" style="display:none">
+    <div class="card">
+      <div class="card-title">Opções de Parcelamento</div>
+      <table class="parcelas-table">
+        <thead>
+          <tr>
+            <th>Parcelas</th>
+            <th>Vencimentos</th>
+            <th>Valor de cada cheque</th>
+            <th>Total nos cheques</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tabelaParcelas"></tbody>
+      </table>
+      <button class="btn-add-parcela" onclick="addLinhaParcela()">
+        <span style="font-size:16px">＋</span> Adicionar opção de parcelamento
+      </button>
+    </div>
+    <button class="btn-calcular" onclick="calcularVenda()">Calcular Acréscimos →</button>
+  </div>
+
+  <!-- ══ RESULTADOS ANTECIPAÇÃO ══ -->
+  <div id="resultadosAntecip">
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">Resultado por Cheque</div>
+      <div id="resultadosCheques"></div>
+    </div>
+    <div class="totalizador">
+      <div class="total-row">
+        <div class="total-item"><div class="tl">VALOR DOS CHEQUES</div><div class="tv clr-branco" id="atvBruto">—</div></div>
+        <div class="divider"></div>
+        <div class="total-item"><div class="tl">TOTAL DESCONTADO</div><div class="tv clr-vermelho" id="atvDesc">—</div></div>
+        <div class="divider"></div>
+        <div class="total-item"><div class="tl">VOCÊ RECEBE HOJE</div><div class="tv clr-verde" id="atvLiq">—</div></div>
+      </div>
+      <div class="nota" id="atvNota"></div>
+    </div>
+  </div>
+
+  <!-- ══ RESULTADOS VENDA ══ -->
+  <div id="resultadosVenda">
+    <div class="card" style="margin-top:20px">
+      <div class="card-title" id="vResCardTitle">Tabela de Parcelamento</div>
+      <div id="vResConteudo"></div>
+    </div>
+    <div class="totalizador" id="vTotalizador" style="display:none">
+      <div class="nota" id="vNotaFinal"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+<script>
+  let modo = 'antecip';
+  let contadorCheque = 0;
+  let numLinhasParcela = 0;
+
+  /* ─── TOGGLE MODO ─── */
+  function setModo(m) {
+    modo = m;
+    document.getElementById('resultadosAntecip').style.display = 'none';
+    document.getElementById('resultadosVenda').style.display   = 'none';
+
+    if (m === 'antecip') {
+      document.body.classList.remove('modo-venda');
+      document.getElementById('btnA').classList.add('ativo');
+      document.getElementById('btnV').classList.remove('ativo');
+      document.getElementById('hLabel').textContent = 'Antecipação de Recebíveis';
+      document.getElementById('hEm').textContent    = 'Desconto de Cheques';
+      document.getElementById('hSub').textContent   = 'Calcule o valor líquido após o desconto bancário ou de factoring';
+      document.getElementById('infoBox').innerHTML  = '<strong>Antecipação de Recebíveis:</strong> Você possui cheques a receber e quer o dinheiro hoje. O banco ou factoring desconta os juros e te repassa o valor líquido imediatamente.';
+      document.getElementById('configAntecip').style.display = '';
+      document.getElementById('configVenda').style.display   = 'none';
+      document.getElementById('secaoAntecip').style.display  = '';
+      document.getElementById('secaoVenda').style.display    = 'none';
+    } else {
+      document.body.classList.add('modo-venda');
+      document.getElementById('btnV').classList.add('ativo');
+      document.getElementById('btnA').classList.remove('ativo');
+      document.getElementById('hLabel').textContent = 'Venda a Prazo com Juros Embutidos';
+      document.getElementById('hEm').textContent    = 'Acréscimo Financeiro';
+      document.getElementById('hSub').textContent   = 'Informe o preço à vista e veja quanto cobrar em cada cheque';
+      document.getElementById('infoBox').innerHTML  = '<strong>Venda a Prazo:</strong> Defina o preço à vista e a taxa de juros. A calculadora mostra o valor a escrever em cada cheque para que você receba o equivalente ao preço à vista.';
+      document.getElementById('configAntecip').style.display = 'none';
+      document.getElementById('configVenda').style.display   = '';
+      document.getElementById('secaoAntecip').style.display  = 'none';
+      document.getElementById('secaoVenda').style.display    = '';
+      if (numLinhasParcela === 0) iniciarLinhasParcela();
+    }
+  }
+
+  /* ─── ANTECIPAÇÃO: cheques livres ─── */
+  function addChequeAntecip() {
+    contadorCheque++;
+    const lista = document.getElementById('listaCheques');
+    const div = document.createElement('div');
+    div.className = 'cheque-item';
+    div.id = 'cheque-' + contadorCheque;
+
+    const prazos = [30,60,90];
+    const sug = prazos[contadorCheque - 1] || 0;
+    let dataSug = '';
+    const db = document.getElementById('dataBase').value;
+    if (db && sug) {
+      const d = new Date(db + 'T12:00:00');
+      d.setDate(d.getDate() + sug);
+      dataSug = d.toISOString().split('T')[0];
+    }
+
+    div.innerHTML = `
+      <div class="cheque-num">CHEQUE #${String(contadorCheque).padStart(2,'0')}</div>
+      <div class="cheque-row">
+        <div class="field"><label>Valor do Cheque (R$)</label>
+          <input type="number" class="valor-cheque" placeholder="Ex: 1500.00" step="0.01" min="0"></div>
+        <div class="field"><label>Vencimento</label>
+          <input type="date" class="data-cheque" value="${dataSug}"></div>
+        <button class="btn-remove" onclick="removerCheque(${contadorCheque})" title="Remover">×</button>
+      </div>`;
+    lista.appendChild(div);
+  }
+
+  function removerCheque(id) {
+    const el = document.getElementById('cheque-' + id);
+    if (el) el.remove();
+  }
+
+  function calcularAntecip() {
+    const dataBase   = document.getElementById('dataBase').value;
+    const taxaMensal = parseFloat(document.getElementById('taxaMensal').value);
+    const tipoCalc   = document.getElementById('tipoCalc').value;
+    const tarifa     = parseFloat(document.getElementById('tarifa').value) || 0;
+
+    if (!dataBase)                             { alert('Informe a data base.'); return; }
+    if (isNaN(taxaMensal) || taxaMensal <= 0)  { alert('Informe a taxa de juros.'); return; }
+
+    const items = document.querySelectorAll('#listaCheques .cheque-item');
+    if (!items.length) { alert('Adicione ao menos um cheque.'); return; }
+
+    const taxaDiaria = taxaMensal / 30 / 100;
+    const base = new Date(dataBase + 'T12:00:00');
+    const resultDiv = document.getElementById('resultadosCheques');
+    resultDiv.innerHTML = '';
+
+    let totalRef = 0, totalJuros = 0, totalFinal = 0, valido = true, delay = 0;
+
+    items.forEach((item, i) => {
+      const valor    = parseFloat(item.querySelector('.valor-cheque').value);
+      const dataVenc = item.querySelector('.data-cheque').value;
+      if (isNaN(valor) || valor <= 0 || !dataVenc) { alert(`Preencha cheque #${i+1}.`); valido=false; return; }
+      const dias = Math.round((new Date(dataVenc+'T12:00:00') - base) / 86400000);
+      if (dias <= 0) { alert(`Vencimento do cheque #${i+1} deve ser futuro.`); valido=false; return; }
+
+      const desconto = tipoCalc === 'simples'
+        ? valor * taxaDiaria * dias
+        : valor * (1 - Math.pow(1/(1+taxaDiaria), dias));
+      const liquido = valor - desconto - tarifa;
+      const taxaEf  = (desconto/valor*100).toFixed(2);
+
+      totalRef   += valor;
+      totalJuros += desconto + tarifa;
+      totalFinal += liquido;
+
+      const res = document.createElement('div');
+      res.className = 'resultado-cheque';
+      res.style.animationDelay = (delay*0.08)+'s';
+      res.innerHTML = `
+        <div class="res-header">
+          <div><div class="res-titulo">Cheque #${String(i+1).padStart(2,'0')} — ${dias} dias</div>
+            <div class="res-valor-original">R$ ${fmt(valor)}</div></div>
+          <div class="res-badge">${fmtData(dataVenc)}</div>
+        </div>
+        <div class="res-grid">
+          <div class="res-item"><div class="res-label">Desconto</div><div class="res-num clr-vermelho">− R$ ${fmt(desconto)}</div></div>
+          <div class="res-item"><div class="res-label">Tarifa</div><div class="res-num clr-amarelo">− R$ ${fmt(tarifa)}</div></div>
+          <div class="res-item"><div class="res-label">Taxa efetiva</div><div class="res-num clr-amarelo">${taxaEf}%</div></div>
+          <div class="res-item" style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:1px solid var(--cinza-borda)">
+            <div class="res-label">Você recebe hoje</div>
+            <div class="res-num clr-verde" style="font-size:19px">R$ ${fmt(liquido)}</div>
+          </div>
+        </div>`;
+      resultDiv.appendChild(res);
+      delay++;
+    });
+    if (!valido) return;
+
+    document.getElementById('atvBruto').textContent = 'R$ '+fmt(totalRef);
+    document.getElementById('atvDesc').textContent  = '−R$ '+fmt(totalJuros);
+    document.getElementById('atvLiq').textContent   = 'R$ '+fmt(totalFinal);
+    const perda = (totalJuros/totalRef*100).toFixed(2);
+    document.getElementById('atvNota').innerHTML =
+      `Você cede <strong style="color:var(--vermelho)">R$ ${fmt(totalJuros)}</strong> (${perda}%) para receber
+       <strong style="color:var(--verde)">R$ ${fmt(totalFinal)}</strong> hoje.`;
+
+    const sec = document.getElementById('resultadosAntecip');
+    sec.style.display = 'block';
+    sec.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  /* ─── VENDA A PRAZO: tabela de parcelas ─── */
+  function iniciarLinhasParcela() {
+    addLinhaParcela(); // 1x
+    addLinhaParcela(); // 2x
+    addLinhaParcela(); // 3x
+  }
+
+  function addLinhaParcela() {
+    numLinhasParcela++;
+    const n = numLinhasParcela;
+    const tbody = document.getElementById('tabelaParcelas');
+    const tr = document.createElement('tr');
+    tr.className = 'parcela-row';
+    tr.id = 'parcela-' + n;
+    tr.innerHTML = `
+      <td><span class="parcela-badge">${n}×</span></td>
+      <td>
+        <div style="font-size:11px;color:var(--texto-suave);font-style:italic;padding:4px 0">
+          calculado automaticamente
+        </div>
+      </td>
+      <td><div class="parcela-resultado" id="pCada-${n}">—</div></td>
+      <td><div class="parcela-resultado" id="pTotal-${n}">—</div></td>
+      <td>
+        ${n > 1
+          ? `<button class="btn-remove" style="width:36px;height:36px;font-size:15px" onclick="removeLinha(${n})" title="Remover">×</button>`
+          : '<div style="width:36px"></div>'}
+      </td>`;
+    tbody.appendChild(tr);
+  }
+
+  function removeLinha(n) {
+    const el = document.getElementById('parcela-' + n);
+    if (el) el.remove();
+  }
+
+  function calcularVenda() {
+    const vista   = parseFloat(document.getElementById('vValorVista').value);
+    const data1   = document.getElementById('vData1').value;
+    const taxa    = parseFloat(document.getElementById('vTaxa').value);
+    const tipo    = document.getElementById('vTipoCalc').value;
+    const interv  = document.getElementById('vIntervalo').value;
+
+    if (isNaN(vista) || vista <= 0) { alert('Informe o valor à vista.'); return; }
+    if (!data1)                     { alert('Informe a data do 1º cheque.'); return; }
+    if (isNaN(taxa) || taxa <= 0)   { alert('Informe a taxa de juros.'); return; }
+
+    const taxaDiaria = taxa / 30 / 100;
+    const rows = document.querySelectorAll('.parcela-row');
+    if (!rows.length) { alert('Adicione ao menos uma linha de parcelamento.'); return; }
+
+    rows.forEach((row, idx) => {
+      const n = idx + 1; // número de parcelas desta linha = posição +1? Não: usamos o badge
+      // Descobrir quantas parcelas esta linha representa pelo badge
+      const badge = row.querySelector('.parcela-badge');
+      const numParc = parseInt(badge.textContent);
+
+      const valorPorCheque_vista = vista / numParc;
+      const intervDias = interv === 'custom' ? 30 : parseInt(interv);
+
+      // Para cada parcela k (1..numParc): dias = k * intervDias a partir de data1
+      // Mas o vencimento do cheque k é data1 + (k-1)*intervalo
+      // dias de capitalização = dias entre hoje e vencimento do cheque k
+      // Como não temos "hoje" aqui (usamos data do 1º cheque como referência de venda),
+      // calculamos a partir da data base = dataBase do modo antecip NÃO existe aqui.
+      // Usamos: dias do cheque k = (k-1)*intervalo + 0 para o primeiro cheque (data1),
+      // Mas precisamos de uma data base. Usamos "hoje".
+      const hoje = new Date();
+      hoje.setHours(12,0,0,0);
+      const d1 = new Date(data1+'T12:00:00');
+      const diasAte1 = Math.round((d1 - hoje) / 86400000);
+
+      let totalCheques = 0;
+      let datas = [];
+      let valorCadaUm = null;
+
+      for (let k = 1; k <= numParc; k++) {
+        const diasVenc = diasAte1 + (k-1)*intervDias;
+        if (diasVenc <= 0) {
+          // vencimento no passado, usar 1 dia mínimo
+        }
+        const dv = new Date(d1);
+        dv.setDate(dv.getDate() + (k-1)*intervDias);
+        datas.push(fmtDataObj(dv));
+
+        const diasK = Math.max(1, Math.round((dv - hoje) / 86400000));
+        let vc;
+        if (tipo === 'simples') {
+          vc = valorPorCheque_vista * (1 + taxaDiaria * diasK);
+        } else {
+          vc = valorPorCheque_vista * Math.pow(1 + taxaDiaria, diasK);
+        }
+        totalCheques += vc;
+        if (k === 1) valorCadaUm = vc; // para exibir (serão diferentes por prazo, mostramos o range)
+      }
+
+      const acrescimo = totalCheques - vista;
+      const pct = (acrescimo / vista * 100).toFixed(2);
+
+      // Atualizar células da linha
+      // Datas (coluna 2)
+      const tdDatas = row.querySelectorAll('td')[1];
+      tdDatas.innerHTML = `<div class="vres-datas">${datas.join('<br>')}</div>`;
+
+      // Valor de cada cheque (pode variar): se todos iguais à vista, mostrar único; senão range
+      // Como prazo varia por cheque, valores serão diferentes — mostrar "varia" ou primeiro/último
+      const pCada = document.getElementById('pCada-'+(row.id.split('-')[1])) || row.querySelector('[id^="pCada"]');
+      const pTotal= document.getElementById('pTotal-'+(row.id.split('-')[1])) || row.querySelector('[id^="pTotal"]');
+
+      // Achar os elementos pelo id dinâmico
+      const idSuffix = row.id.replace('parcela-','');
+      const elCada  = document.getElementById('pCada-'+idSuffix);
+      const elTotal = document.getElementById('pTotal-'+idSuffix);
+
+      if (numParc === 1) {
+        elCada.textContent  = 'R$ ' + fmt(totalCheques);
+        elCada.className = 'parcela-resultado calculado';
+      } else {
+        elCada.textContent  = 'ver datas →';
+        elCada.className = 'parcela-resultado calculado';
+      }
+      elTotal.textContent = 'R$ ' + fmt(totalCheques);
+      elTotal.className = 'parcela-resultado calculado';
+      elTotal.title = `Acréscimo: R$ ${fmt(acrescimo)} (${pct}%)`;
+    });
+
+    // Montar resultado expandido
+    const resDiv = document.getElementById('vResConteudo');
+    resDiv.innerHTML = '';
+
+    rows.forEach((row, idx) => {
+      const badge    = row.querySelector('.parcela-badge');
+      const numParc  = parseInt(badge.textContent);
+      const intervDias = interv === 'custom' ? 30 : parseInt(interv);
+      const hoje = new Date(); hoje.setHours(12,0,0,0);
+      const d1   = new Date(data1+'T12:00:00');
+      const valorPorCheque_vista = vista / numParc;
+
+      const block = document.createElement('div');
+      block.style.cssText = 'margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--cinza-borda)';
+      if (idx === rows.length-1) block.style.borderBottom = 'none';
+
+      // cabeçalho do bloco
+      let html = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:3px">${numParc}× CHEQUE${numParc>1?'S':''}</div>
+            <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--texto)">À vista: R$ ${fmt(vista)}</div>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr>
+            <th style="font-family:'DM Mono',monospace;font-size:10px;color:var(--texto-suave);text-align:left;padding:0 8px 8px;letter-spacing:1px">Cheque</th>
+            <th style="font-family:'DM Mono',monospace;font-size:10px;color:var(--texto-suave);text-align:left;padding:0 8px 8px;letter-spacing:1px">Vencimento</th>
+            <th style="font-family:'DM Mono',monospace;font-size:10px;color:var(--texto-suave);text-align:left;padding:0 8px 8px;letter-spacing:1px">Dias</th>
+            <th style="font-family:'DM Mono',monospace;font-size:10px;color:var(--texto-suave);text-align:right;padding:0 8px 8px;letter-spacing:1px">Valor do cheque</th>
+          </tr></thead><tbody>`;
+
+      let totalBloco = 0;
+      for (let k = 1; k <= numParc; k++) {
+        const dv = new Date(d1);
+        dv.setDate(dv.getDate() + (k-1)*intervDias);
+        const diasK = Math.max(1, Math.round((dv - hoje)/86400000));
+        let vc = tipo === 'simples'
+          ? valorPorCheque_vista*(1+taxaDiaria*diasK)
+          : valorPorCheque_vista*Math.pow(1+taxaDiaria, diasK);
+        totalBloco += vc;
+
+        html += `<tr style="border-bottom:1px solid var(--cinza-borda)">
+          <td style="padding:9px 8px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent)">#${String(k).padStart(2,'0')}</td>
+          <td style="padding:9px 8px;font-size:12px;color:var(--texto-suave)">${fmtDataObj(dv)} <span style="opacity:.5;font-size:10px">(${diasK}d)</span></td>
+          <td style="padding:9px 8px;font-size:12px;color:var(--texto-suave)">${diasK} dias</td>
+          <td style="padding:9px 8px;font-family:'DM Mono',monospace;font-size:14px;color:var(--azul);text-align:right;font-weight:600">R$ ${fmt(vc)}</td>
+        </tr>`;
+      }
+
+      const acresc = totalBloco - vista;
+      const pct    = (acresc/vista*100).toFixed(2);
+
+      html += `</tbody></table>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:12px 8px;background:var(--cinza);border-radius:8px">
+          <div style="font-size:12px;color:var(--texto-suave)">
+            Acréscimo total: <span style="color:var(--amarelo);font-family:'DM Mono',monospace">+ R$ ${fmt(acresc)} (${pct}%)</span>
+          </div>
+          <div style="font-family:'DM Serif Display',serif;font-size:18px;color:var(--azul)">
+            Total: R$ ${fmt(totalBloco)}
+          </div>
+        </div>`;
+
+      block.innerHTML = html;
+      resDiv.appendChild(block);
+    });
+
+    document.getElementById('resultadosVenda').style.display = 'block';
+    document.getElementById('vTotalizador').style.display    = 'none';
+    document.getElementById('resultadosVenda').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  /* ─── UTILS ─── */
+  function fmt(v) { return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fmtData(s) { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
+  function fmtDataObj(d) {
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  }
+
+  window.onload = () => {
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('dataBase').value = hoje;
+
+    // Data sugerida do 1º cheque = 30 dias
+    const d30 = new Date();
+    d30.setDate(d30.getDate()+30);
+    document.getElementById('vData1').value = d30.toISOString().split('T')[0];
+
+    // Cheques antecipação
+    addChequeAntecip(); addChequeAntecip(); addChequeAntecip();
+  };
+</script>
+</body>
+</html>
