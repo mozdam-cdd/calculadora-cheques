@@ -314,22 +314,21 @@
   .recibo-print { display: none; }
 
   @media print {
-    @page { size: 75mm 175mm; margin: 3mm; }
+    @page { size: 75mm auto; margin: 3mm; }
 
     html, body {
-      width: 100% !important; height: 100% !important;
       margin: 0 !important; padding: 0 !important;
       background: #fff !important;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    body * { visibility: hidden !important; }
-    .recibo-print, .recibo-print * { visibility: visible !important; }
+    /* Esconde tudo do app (sem ocupar espaço) e mostra apenas o recibo */
+    body > *:not(.recibo-print) { display: none !important; }
 
     .recibo-print {
       display: block !important;
-      position: absolute; top: 0; left: 0;
-      width: 69mm; padding: 2mm;
+      width: 69mm; max-width: 100%;
+      margin: 0 auto; padding: 2mm;
       font-family: 'Courier New', Courier, monospace;
       font-size: 8px; color: #000; line-height: 1.35;
       background: #fff;
@@ -600,7 +599,7 @@
         </div>
         <div class="field">
           <label>Número do Cheque</label>
-          <input type="number" class="numero-cheque" inputmode="numeric" placeholder="Ex: 123456" step="1" min="0">
+          <input type="text" class="numero-cheque" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 012012" maxlength="12" oninput="this.value=this.value.replace(/\D/g,'')">
         </div>
       </div>`;
     lista.appendChild(div);
