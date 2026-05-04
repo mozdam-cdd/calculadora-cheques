@@ -365,58 +365,6 @@
   }
   .bloqueio-link:hover { opacity: 1; color: var(--accent); }
 
-  /* ─── PAINEL ADMIN ─── */
-  .painel-admin {
-    position: fixed; inset: 0; z-index: 9998;
-    background: var(--preto); overflow-y: auto;
-    padding: 24px 16px 60px; display: none;
-  }
-  .painel-admin.mostrar { display: block; }
-  .painel-admin .admin-container {
-    max-width: 500px; margin: 0 auto;
-  }
-  .painel-admin h2 {
-    font-family: 'Sora', sans-serif; font-weight: 700;
-    font-size: 18px; color: var(--accent); margin-bottom: 4px;
-  }
-  .painel-admin .admin-sub {
-    font-size: 11px; color: var(--texto-suave); margin-bottom: 18px;
-  }
-  .painel-admin .admin-btn {
-    width: 100%; background: var(--accent); color: var(--preto);
-    border: none; border-radius: 10px; padding: 13px;
-    font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700;
-    cursor: pointer; transition: all .2s; margin-bottom: 14px;
-  }
-  .painel-admin .admin-btn:hover { filter: brightness(.88); }
-  .painel-admin .admin-btn-sec {
-    background: transparent; border: 1px solid var(--cinza-borda);
-    color: var(--texto-suave);
-  }
-  .admin-tabela {
-    width: 100%; border-collapse: collapse;
-    font-family: 'DM Mono', monospace; font-size: 12px;
-  }
-  .admin-tabela th {
-    text-align: left; font-size: 10px; letter-spacing: 2px;
-    text-transform: uppercase; color: var(--texto-suave); padding: 0 8px 8px;
-    font-weight: 600;
-  }
-  .admin-tabela td {
-    padding: 10px 8px; border-top: 1px solid var(--cinza-borda);
-  }
-  .admin-remover {
-    background: transparent; border: 1px solid rgba(255,94,94,.3);
-    border-radius: 6px; color: var(--vermelho); font-size: 16px;
-    width: 30px; height: 30px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; transition: all .2s;
-  }
-  .admin-remover:hover { background: rgba(255,94,94,.1); border-color: var(--vermelho); }
-  .admin-vazio {
-    text-align: center; color: var(--texto-suave); font-size: 12px;
-    padding: 24px 0; opacity: .6;
-  }
-
   /* ─── RECIBO IMPRESSÃO ─── */
   /* PDF gerado via jsPDF — sem dependência de @media print */
 </style>
@@ -434,22 +382,7 @@
     <button class="bloqueio-btn" onclick="entrarComToken()">Entrar</button>
     <div class="bloqueio-erro" id="bloqueioErro"></div>
     <div id="tokenAtivoInfo" style="display:none;margin-top:12px;font-size:11px;color:var(--texto-suave);font-family:'DM Mono',monospace;letter-spacing:1px"></div>
-    <footer id="versaoBloqueio" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.005</footer>
-  </div>
-</div>
-
-<div id="painelAdmin" class="painel-admin">
-  <div class="admin-container">
-    <h2>Painel de Tokens</h2>
-    <p class="admin-sub">Tokens de acesso. Cada token é único. Remova um token para revogar o acesso futuro.</p>
-    <button class="admin-btn" onclick="gerarTokenAdmin()">+ Gerar novo token</button>
-    <table class="admin-tabela">
-      <thead><tr><th>Token</th><th></th></tr></thead>
-      <tbody id="adminTabelaBody">
-        <tr><td colspan="2" class="admin-vazio">Nenhum token criado ainda</td></tr>
-      </tbody>
-    </table>
-    <button class="admin-btn admin-btn-sec" style="margin-top:14px" onclick="fecharPainelAdmin()">← Voltar</button>
+    <footer id="versaoBloqueio" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.006</footer>
   </div>
 </div>
 
@@ -601,7 +534,7 @@
   </div>
 
   <footer id="versaoRodape" style="text-align:center;margin-top:32px;padding-top:18px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">
-    v1.005
+    v1.006
   </footer>
 
 </div><!-- /container -->
@@ -612,57 +545,17 @@
 
 <script>
   /* ═══════════════════════════════════════
-     SISTEMA DE TOKEN — consumo único
+     SISTEMA DE TOKEN — backend Apps Script + Sheets
      ═══════════════════════════════════════ */
-  const SEED = 0x5F3A;
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSFZGd7U3FOUIrvfCi-1azFSZTzCG6SW6pGZb37bG7Es_IYHmb3_weC5-FziEmpmAP-g/exec';
   const LS_AUTH = 'calc_auth';
-  const LS_TOKENS = 'calc_tokens';
 
   function hashToken(str) {
-    let h = SEED;
+    let h = 0x5F3A;
     for (let i = 0; i < str.length; i++) {
       h = ((h << 5) - h + str.charCodeAt(i)) | 0;
     }
     return (h >>> 0).toString(16).padStart(8, '0');
-  }
-
-  function gerarNovoToken() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let prefix = '';
-    for (let i = 0; i < 4; i++) prefix += chars[Math.floor(Math.random() * chars.length)];
-    const sig = hashToken('UF-' + prefix).substring(0, 4).toUpperCase();
-    return 'UF-' + prefix + '-' + sig;
-  }
-
-  function validarToken(token) {
-    const limpo = token.trim().toUpperCase();
-    const parts = limpo.split('-');
-    if (parts.length !== 3 || parts[0] !== 'UF' || parts[1].length !== 4) return false;
-    const prefix = parts[0] + '-' + parts[1];
-    const sig = parts[2];
-    return hashToken(prefix).substring(0, 4).toUpperCase() === sig;
-  }
-
-  function carregarTokens() {
-    try {
-      return JSON.parse(localStorage.getItem(LS_TOKENS)) || {};
-    } catch(e) { return {}; }
-  }
-
-  function salvarTokens(tokens) {
-    localStorage.setItem(LS_TOKENS, JSON.stringify(tokens));
-  }
-
-  function verificarAutenticacao() {
-    const auth = localStorage.getItem(LS_AUTH);
-    if (!auth) return false;
-    try {
-      const dados = JSON.parse(auth);
-      if (!dados.token || !dados.deviceId) return false;
-      const deviceId = gerarDeviceId();
-      if (dados.deviceId !== deviceId) return false;
-      return true;
-    } catch(e) { return false; }
   }
 
   function gerarDeviceId() {
@@ -676,25 +569,44 @@
     return hashToken(info);
   }
 
-  function consumirToken(token) {
-    const limpo = token.trim().toUpperCase();
-    const tokens = carregarTokens();
-    // Verifica se token existe na lista do admin (se admin gerou)
-    // Se não existe mas é válido por hash → primeiro acesso neste dispositivo
-    if (!tokens[limpo]) {
-      // Token válido mas não está na lista deste dispositivo
-      // Salva localmente para evitar reuso no mesmo dispositivo
-      tokens[limpo] = 'usado';
-      salvarTokens(tokens);
-    }
-    const deviceId = gerarDeviceId();
-    localStorage.setItem(LS_AUTH, JSON.stringify({ token: limpo, deviceId }));
-    return 'ok';
+  function verificarAutenticacao() {
+    const auth = localStorage.getItem(LS_AUTH);
+    if (!auth) return false;
+    try {
+      const dados = JSON.parse(auth);
+      if (!dados.token || !dados.deviceId) return false;
+      if (dados.deviceId !== gerarDeviceId()) return false;
+      return true;
+    } catch(e) { return false; }
   }
 
-  function entrarComToken() {
+  async function consumirToken(token) {
+    const deviceId = gerarDeviceId();
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'redeem',
+          token,
+          deviceId,
+          userAgent: navigator.userAgent
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        localStorage.setItem(LS_AUTH, JSON.stringify({ token, deviceId }));
+      }
+      return data.status || 'erro';
+    } catch (e) {
+      return 'erro_rede';
+    }
+  }
+
+  async function entrarComToken() {
     const input = document.getElementById('inputToken');
     const erro = document.getElementById('bloqueioErro');
+    const btn = document.querySelector('.bloqueio-btn');
     const token = input.value.trim().toUpperCase();
 
     if (!token) {
@@ -703,27 +615,29 @@
       return;
     }
 
-    if (token === 'UF-2026-ROOT') {
-      document.getElementById('telaBloqueio').style.display = 'none';
-      document.getElementById('painelAdmin').classList.add('mostrar');
-      atualizarTabelaAdmin();
+    erro.style.display = 'none';
+    const labelOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Validando...';
+
+    const status = await consumirToken(token);
+
+    btn.disabled = false;
+    btn.textContent = labelOriginal;
+
+    if (status === 'ok') {
+      mostrarApp();
       return;
     }
 
-    if (!validarToken(token)) {
-      erro.textContent = 'Token inválido. Verifique e tente novamente.';
-      erro.style.display = 'block';
-      return;
-    }
-
-    const resultado = consumirToken(token);
-    if (resultado === 'usado') {
-      erro.textContent = 'Este token já foi utilizado em outro dispositivo.';
-      erro.style.display = 'block';
-      return;
-    }
-
-    mostrarApp();
+    const mensagens = {
+      invalido:   'Token inválido. Verifique e tente novamente.',
+      revogado:   'Este token foi revogado. Procure o administrador.',
+      usado:      'Este token já foi utilizado em outro dispositivo.',
+      erro_rede:  'Sem conexão. Verifique sua internet e tente novamente.'
+    };
+    erro.textContent = mensagens[status] || 'Erro ao validar o token. Tente novamente.';
+    erro.style.display = 'block';
   }
 
   function versaoCompleta() {
@@ -731,10 +645,10 @@
       const auth = JSON.parse(localStorage.getItem(LS_AUTH));
       if (auth && auth.token) {
         const ultimos = auth.token.slice(-4);
-        return 'v1.005 (' + ultimos + ')';
+        return 'v1.006 (' + ultimos + ')';
       }
     } catch(e) {}
-    return 'v1.005';
+    return 'v1.006';
   }
 
   function atualizarVersoes() {
@@ -765,67 +679,7 @@
 
   function mostrarApp() {
     document.getElementById('telaBloqueio').style.display = 'none';
-    document.getElementById('painelAdmin').classList.remove('mostrar');
     atualizarVersoes();
-  }
-
-  function fecharPainelAdmin() {
-    document.getElementById('painelAdmin').classList.remove('mostrar');
-    if (verificarAutenticacao()) {
-      document.getElementById('telaBloqueio').style.display = 'none';
-    } else {
-      document.getElementById('telaBloqueio').style.display = '';
-      document.getElementById('inputToken').value = '';
-      document.getElementById('bloqueioErro').style.display = 'none';
-    }
-  }
-
-  function gerarTokenAdmin() {
-    const novo = gerarNovoToken();
-    const tokens = carregarTokens();
-    tokens[novo] = 'livre';
-    salvarTokens(tokens);
-    atualizarTabelaAdmin();
-
-    // Copia o token
-    const msg = 'Token: ' + novo + '\n\nAcesse: ' + window.location.href.split('?')[0];
-    if (navigator.share) {
-      navigator.share({ title: 'Token de Acesso', text: msg }).catch(() => {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(novo).then(() => {
-        alert('Token copiado!\n\n' + msg);
-      }).catch(() => {
-        prompt('Copie o token:', novo);
-      });
-    } else {
-      prompt('Copie o token:', novo);
-    }
-  }
-
-  function removerTokenAdmin(token) {
-    const tokens = carregarTokens();
-    delete tokens[token];
-    salvarTokens(tokens);
-    atualizarTabelaAdmin();
-  }
-
-  function atualizarTabelaAdmin() {
-    const tbody = document.getElementById('adminTabelaBody');
-    const tokens = carregarTokens();
-    const lista = Object.keys(tokens).sort().reverse();
-
-    if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="2" class="admin-vazio">Nenhum token criado ainda</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = lista.map(token => `
-      <tr>
-        <td style="color:var(--texto);font-family:'DM Mono',monospace;font-size:13px">${token}</td>
-        <td style="text-align:right">
-          <button class="admin-remover" onclick="removerTokenAdmin('${token}')" title="Revogar token">×</button>
-        </td>
-      </tr>`).join('');
   }
 
   /* ═══════════════════════════════════════ */
@@ -1433,13 +1287,10 @@
   }
 
   window.onload = () => {
-    // ?admin na URL → força tela de bloqueio (mas preserva auth para mostrar token ativo)
-    const modoAdmin = /[?&]admin/.test(location.search);
-    if (modoAdmin) {
-      document.getElementById('telaBloqueio').style.display = '';
-      atualizarVersoes();
-    } else if (verificarAutenticacao()) {
+    if (verificarAutenticacao()) {
       mostrarApp();
+    } else {
+      atualizarVersoes();
     }
 
     const inputToken = document.getElementById('inputToken');

@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin — Calculadora de Cheques</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul: #4d9fff; --azul-escuro: #2d7fe0;
+    --preto: #0a0f0d; --cinza-escuro: #131a16;
+    --cinza: #1e2921; --cinza-borda: #2d3d33;
+    --texto: #e8f5ee; --texto-suave: #7a9e87;
+    --vermelho: #ff5e5e; --amarelo: #f5c842;
+    --accent: var(--azul);
+    --accent-bg: rgba(77,159,255,0.12); --accent-borda: rgba(77,159,255,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--preto); color: var(--texto);
+    font-family: 'Sora', sans-serif; min-height: 100vh; padding: 24px 16px 60px;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(77,159,255,0.1) 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px);
+  }
+
+  .container { max-width: 760px; margin: 0 auto; }
+
+  header { text-align: center; margin-bottom: 24px; }
+  header .label {
+    font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:8px; opacity:.8;
+  }
+  header h1 {
+    font-family:'Sora',sans-serif; font-weight:700;
+    font-size:clamp(22px,5vw,30px); line-height:1.15;
+  }
+
+  .card {
+    background: var(--cinza-escuro); border: 1px solid var(--cinza-borda);
+    border-radius: 16px; padding: 22px; margin-bottom: 18px;
+  }
+  .card-title {
+    font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:14px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card-title::before {
+    content:''; display:inline-block; width:6px; height:6px;
+    background:var(--accent); border-radius:50%;
+  }
+
+  .field { display:flex; flex-direction:column; gap:5px; margin-bottom: 12px; }
+  .field label { font-size:11px; color:var(--texto-suave); font-weight:600; letter-spacing:.5px; }
+  .field input {
+    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:10px;
+    padding:11px 13px; color:var(--texto); font-family:'DM Mono',monospace; font-size:14px;
+    outline:none; transition:border-color .2s,box-shadow .2s; width:100%;
+  }
+  .field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
+  .field input::placeholder { color:var(--texto-suave); opacity:.45; }
+
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .btn {
+    width:100%; background:var(--accent); color:var(--preto);
+    border:none; border-radius:10px; padding:13px;
+    font-family:'Sora',sans-serif; font-size:14px; font-weight:700;
+    cursor:pointer; transition:all .2s;
+  }
+  .btn:hover { filter: brightness(.88); }
+  .btn:disabled { opacity:.55; cursor:not-allowed; }
+  .btn-sec {
+    background:transparent; border:1px solid var(--cinza-borda); color:var(--texto-suave);
+  }
+  .btn-link {
+    background:none; border:none; color:var(--texto-suave); cursor:pointer;
+    font-family:'Sora',sans-serif; font-size:11px; opacity:.6; transition:opacity .2s;
+  }
+  .btn-link:hover { opacity:1; color:var(--accent); }
+
+  .erro {
+    color: var(--vermelho); font-size: 12px; margin-top: 10px; display: none;
+  }
+  .info {
+    color: var(--texto-suave); font-size: 12px; margin: 8px 0 14px;
+  }
+
+  /* Tela login */
+  .tela-login {
+    position:fixed; inset:0; z-index:9999; background:var(--preto);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .tela-login .card-login {
+    width:100%; max-width:380px; background:var(--cinza-escuro);
+    border:1px solid var(--cinza-borda); border-radius:16px; padding:30px;
+    text-align:center;
+  }
+  .tela-login .ico { font-size:36px; margin-bottom:14px; }
+  .tela-login h2 {
+    font-family:'Sora',sans-serif; font-weight:700; font-size:18px;
+    color:var(--accent); margin-bottom:6px;
+  }
+  .tela-login p {
+    font-size:12px; color:var(--texto-suave); margin-bottom:18px;
+  }
+  .tela-login input {
+    width:100%; text-align:center;
+    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:10px;
+    padding:13px; color:var(--texto); font-family:'DM Mono',monospace;
+    font-size:15px; letter-spacing:2px; outline:none; margin-bottom:14px;
+  }
+  .tela-login input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
+
+  /* Tabela */
+  .tabela {
+    width:100%; border-collapse:collapse;
+    font-family:'DM Mono',monospace; font-size:12px;
+  }
+  .tabela th {
+    text-align:left; font-size:10px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--texto-suave); padding:0 8px 10px;
+    font-weight:600;
+  }
+  .tabela td {
+    padding:10px 8px; border-top:1px solid var(--cinza-borda);
+    vertical-align:top;
+  }
+  .tabela tr:hover td { background: rgba(77,159,255,0.03); }
+  .tk { color:var(--texto); font-weight:500; white-space:nowrap; }
+  .cli { color:var(--texto-suave); font-family:'Sora',sans-serif; font-size:13px; }
+  .dt  { color:var(--texto-suave); font-size:11px; }
+  .badge {
+    display:inline-block; padding:3px 8px; border-radius:6px;
+    font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:600;
+  }
+  .badge-livre   { background:rgba(122,158,135,0.15); color:var(--texto-suave); }
+  .badge-usado   { background:rgba(77,159,255,0.15);  color:var(--azul); }
+  .badge-revog   { background:rgba(255,94,94,0.15);   color:var(--vermelho); }
+
+  .acao-btn {
+    background:transparent; border:1px solid rgba(255,94,94,.3);
+    border-radius:6px; color:var(--vermelho); font-size:14px;
+    width:30px; height:30px; cursor:pointer; display:inline-flex;
+    align-items:center; justify-content:center; transition:all .2s;
+  }
+  .acao-btn:hover { background:rgba(255,94,94,.1); border-color:var(--vermelho); }
+  .acao-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+  .vazio {
+    text-align:center; color:var(--texto-suave); font-size:12px;
+    padding:24px 0; opacity:.7;
+  }
+
+  /* Modal de token gerado */
+  .modal-overlay {
+    position:fixed; inset:0; z-index:10000;
+    background:rgba(10,15,13,.85); backdrop-filter: blur(6px);
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.mostrar { display:flex; }
+  .modal-card {
+    width:100%; max-width:420px; background:var(--cinza-escuro);
+    border:1px solid var(--accent-borda); border-radius:16px;
+    padding:28px; text-align:center;
+  }
+  .modal-card h3 {
+    font-family:'Sora',sans-serif; font-size:14px; color:var(--accent);
+    text-transform:uppercase; letter-spacing:2px; margin-bottom:8px;
+  }
+  .modal-card .token-grande {
+    font-family:'DM Mono',monospace; font-size:22px; font-weight:600;
+    color:var(--texto); padding:18px; background:var(--cinza);
+    border:1px solid var(--cinza-borda); border-radius:10px;
+    margin:12px 0 18px; letter-spacing:2px; user-select:all;
+  }
+  .modal-card .modal-acoes {
+    display:flex; gap:10px; margin-top:14px;
+  }
+
+  .footer {
+    text-align:center; margin-top:30px; padding-top:18px;
+    border-top:1px solid var(--cinza-borda);
+    font-family:'DM Mono',monospace; font-size:10px;
+    letter-spacing:2px; color:var(--texto-suave); opacity:.55;
+  }
+</style>
+</head>
+<body>
+
+<!-- Tela de login admin -->
+<div id="telaLogin" class="tela-login">
+  <div class="card-login">
+    <div class="ico">🔐</div>
+    <h2>Painel Admin</h2>
+    <p>Digite a senha de administrador</p>
+    <input type="password" id="inputSenha" autocomplete="off" placeholder="••••••••">
+    <button class="btn" onclick="entrar()">Entrar</button>
+    <div class="erro" id="erroLogin"></div>
+  </div>
+</div>
+
+<!-- Painel principal -->
+<div id="painel" class="container" style="display:none">
+  <header>
+    <div class="label">Painel Administrativo</div>
+    <h1>Tokens de <em style="color:var(--accent);font-style:italic">Acesso</em></h1>
+  </header>
+
+  <div class="card">
+    <div class="card-title">Gerar Novo Token</div>
+    <div class="row2">
+      <div class="field">
+        <label>Cliente (opcional)</label>
+        <input type="text" id="inputCliente" placeholder="Ex: João Padaria">
+      </div>
+      <div class="field">
+        <label>Observação (opcional)</label>
+        <input type="text" id="inputObs" placeholder="Ex: vendido em 03/05">
+      </div>
+    </div>
+    <button class="btn" id="btnGerar" onclick="gerarTokenNovo()">+ Gerar token</button>
+    <div class="erro" id="erroGerar"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Tokens Emitidos</span>
+      <button class="btn-link" onclick="recarregar()">↻ Atualizar</button>
+    </div>
+    <div id="listaWrap">
+      <div class="vazio">Carregando...</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:14px">
+    <button class="btn-link" onclick="sair()">Sair do painel admin</button>
+  </div>
+
+  <div class="footer">v1.006 — admin</div>
+</div>
+
+<!-- Modal de token gerado -->
+<div id="modalToken" class="modal-overlay">
+  <div class="modal-card">
+    <h3>Token gerado</h3>
+    <p style="color:var(--texto-suave);font-size:12px">Copie e envie ao cliente. Cada token é válido em apenas um dispositivo.</p>
+    <div class="token-grande" id="modalTokenValor">UF-XXXX-XXXX</div>
+    <div class="modal-acoes">
+      <button class="btn btn-sec" onclick="fecharModal()">Fechar</button>
+      <button class="btn" id="btnCopiar" onclick="copiarToken()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSFZGd7U3FOUIrvfCi-1azFSZTzCG6SW6pGZb37bG7Es_IYHmb3_weC5-FziEmpmAP-g/exec';
+  const SS_SECRET = 'calc_admin_secret';
+
+  let dadosCache = { tokens: [], redencoes: [] };
+
+  async function api(action, payload = {}) {
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      return await res.json();
+    } catch (e) {
+      return { status: 'erro', erro: 'rede' };
+    }
+  }
+
+  function getSecret() {
+    return sessionStorage.getItem(SS_SECRET);
+  }
+
+  async function entrar() {
+    const inp = document.getElementById('inputSenha');
+    const erro = document.getElementById('erroLogin');
+    const secret = inp.value;
+    if (!secret) {
+      erro.textContent = 'Digite a senha.';
+      erro.style.display = 'block';
+      return;
+    }
+    erro.style.display = 'none';
+    const r = await api('admin_list', { secret });
+    if (r.status === 'ok') {
+      sessionStorage.setItem(SS_SECRET, secret);
+      dadosCache = { tokens: r.tokens || [], redencoes: r.redencoes || [] };
+      mostrarPainel();
+    } else if (r.status === 'unauthorized') {
+      erro.textContent = 'Senha incorreta.';
+      erro.style.display = 'block';
+    } else if (r.erro === 'rede') {
+      erro.textContent = 'Sem conexão com o servidor.';
+      erro.style.display = 'block';
+    } else {
+      erro.textContent = 'Erro: ' + (r.erro || r.status);
+      erro.style.display = 'block';
+    }
+  }
+
+  function mostrarPainel() {
+    document.getElementById('telaLogin').style.display = 'none';
+    document.getElementById('painel').style.display = '';
+    renderLista();
+  }
+
+  function sair() {
+    sessionStorage.removeItem(SS_SECRET);
+    location.reload();
+  }
+
+  async function recarregar() {
+    const secret = getSecret();
+    if (!secret) return sair();
+    const r = await api('admin_list', { secret });
+    if (r.status === 'ok') {
+      dadosCache = { tokens: r.tokens || [], redencoes: r.redencoes || [] };
+      renderLista();
+    } else if (r.status === 'unauthorized') {
+      sair();
+    }
+  }
+
+  function renderLista() {
+    const wrap = document.getElementById('listaWrap');
+    const tokens = dadosCache.tokens.slice().reverse();
+
+    if (!tokens.length) {
+      wrap.innerHTML = '<div class="vazio">Nenhum token criado ainda</div>';
+      return;
+    }
+
+    const tabela = `
+      <table class="tabela">
+        <thead>
+          <tr>
+            <th>Token</th>
+            <th>Cliente / Obs</th>
+            <th>Criado</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tokens.map(linhaHtml).join('')}
+        </tbody>
+      </table>
+    `;
+    wrap.innerHTML = tabela;
+  }
+
+  function fmtData(iso) {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      const dia = String(d.getDate()).padStart(2, '0');
+      const mes = String(d.getMonth() + 1).padStart(2, '0');
+      const ano = d.getFullYear();
+      return `${dia}/${mes}/${ano}`;
+    } catch (e) { return String(iso).slice(0, 10); }
+  }
+
+  function escapar(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function statusDoToken(token) {
+    const revogado = String(token.revogado || '').trim().toLowerCase();
+    if (revogado === 'sim' || revogado === 'true') {
+      return { txt: 'Revogado', cls: 'badge-revog' };
+    }
+    const usos = dadosCache.redencoes.filter(
+      r => String(r.token).trim().toUpperCase() === String(token.token).trim().toUpperCase()
+    );
+    if (usos.length > 0) {
+      return { txt: 'Usado', cls: 'badge-usado' };
+    }
+    return { txt: 'Ativo', cls: 'badge-livre' };
+  }
+
+  function linhaHtml(token) {
+    const st = statusDoToken(token);
+    const tk = String(token.token || '').trim();
+    const podeRevogar = st.cls !== 'badge-revog';
+    const obs = [token.cliente, token.obs].filter(Boolean).join(' · ');
+    return `
+      <tr>
+        <td class="tk">${escapar(tk)}</td>
+        <td class="cli">${escapar(obs) || '—'}</td>
+        <td class="dt">${fmtData(token.criado_em)}</td>
+        <td><span class="badge ${st.cls}">${st.txt}</span></td>
+        <td style="text-align:right">
+          <button class="acao-btn" title="Revogar" ${podeRevogar ? '' : 'disabled'}
+                  onclick="revogar('${escapar(tk)}')">×</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function gerarTokenLocal() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const bloco = () => {
+      let s = '';
+      for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+      return s;
+    };
+    return 'UF-' + bloco() + '-' + bloco();
+  }
+
+  async function gerarTokenNovo() {
+    const secret = getSecret();
+    if (!secret) return sair();
+    const btn = document.getElementById('btnGerar');
+    const erro = document.getElementById('erroGerar');
+    erro.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+
+    const cliente = document.getElementById('inputCliente').value.trim();
+    const obs = document.getElementById('inputObs').value.trim();
+    const token = gerarTokenLocal();
+    const r = await api('admin_create', { secret, token, cliente, obs });
+
+    btn.disabled = false;
+    btn.textContent = '+ Gerar token';
+
+    if (r.status === 'ok') {
+      document.getElementById('inputCliente').value = '';
+      document.getElementById('inputObs').value = '';
+      abrirModal(token);
+      await recarregar();
+    } else if (r.status === 'unauthorized') {
+      sair();
+    } else if (r.erro === 'token_duplicado') {
+      // muito raro, tenta de novo
+      gerarTokenNovo();
+    } else {
+      erro.textContent = 'Erro: ' + (r.erro || r.status);
+      erro.style.display = 'block';
+    }
+  }
+
+  async function revogar(token) {
+    if (!confirm('Revogar o token ' + token + '?\nEle deixará de funcionar imediatamente em qualquer dispositivo.')) return;
+    const secret = getSecret();
+    if (!secret) return sair();
+    const r = await api('admin_revoke', { secret, token });
+    if (r.status === 'ok') {
+      await recarregar();
+    } else if (r.status === 'unauthorized') {
+      sair();
+    } else {
+      alert('Erro ao revogar: ' + (r.erro || r.status));
+    }
+  }
+
+  function abrirModal(token) {
+    document.getElementById('modalTokenValor').textContent = token;
+    document.getElementById('modalToken').classList.add('mostrar');
+    document.getElementById('btnCopiar').textContent = 'Copiar';
+  }
+
+  function fecharModal() {
+    document.getElementById('modalToken').classList.remove('mostrar');
+  }
+
+  function copiarToken() {
+    const token = document.getElementById('modalTokenValor').textContent;
+    const btn = document.getElementById('btnCopiar');
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(token).then(() => {
+        btn.textContent = 'Copiado ✓';
+        setTimeout(() => btn.textContent = 'Copiar', 1500);
+      }).catch(() => {
+        prompt('Copie o token:', token);
+      });
+    } else {
+      prompt('Copie o token:', token);
+    }
+  }
+
+  document.getElementById('inputSenha').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') entrar();
+  });
+
+  // Auto-login se já tiver secret válido em sessionStorage
+  (async () => {
+    const secret = getSecret();
+    if (!secret) return;
+    const r = await api('admin_list', { secret });
+    if (r.status === 'ok') {
+      dadosCache = { tokens: r.tokens || [], redencoes: r.redencoes || [] };
+      mostrarPainel();
+    } else {
+      sessionStorage.removeItem(SS_SECRET);
+    }
+  })();
+</script>
+</body>
+</html>
