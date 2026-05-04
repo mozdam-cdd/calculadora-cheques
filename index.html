@@ -382,7 +382,7 @@
     <button class="bloqueio-btn" onclick="entrarComToken()">Entrar</button>
     <div class="bloqueio-erro" id="bloqueioErro"></div>
     <div id="tokenAtivoInfo" style="display:none;margin-top:12px;font-size:11px;color:var(--texto-suave);font-family:'DM Mono',monospace;letter-spacing:1px"></div>
-    <footer id="versaoBloqueio" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.009</footer>
+    <footer id="versaoBloqueio" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.010</footer>
   </div>
 </div>
 
@@ -534,7 +534,7 @@
   </div>
 
   <footer id="versaoRodape" style="text-align:center;margin-top:32px;padding-top:18px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">
-    v1.009
+    v1.010
   </footer>
 
 </div><!-- /container -->
@@ -645,10 +645,10 @@
       const auth = JSON.parse(localStorage.getItem(LS_AUTH));
       if (auth && auth.token) {
         const ultimos = auth.token.slice(-4);
-        return 'v1.009 (' + ultimos + ')';
+        return 'v1.010 (' + ultimos + ')';
       }
     } catch(e) {}
-    return 'v1.009';
+    return 'v1.010';
   }
 
   function atualizarVersoes() {
@@ -774,13 +774,13 @@
   }
 
   async function calcularAntecip() {
-    // Revalida token antes de calcular
+    // Revalida token antes de calcular (só bloqueia em revogado/usado)
     if (verificarAutenticacao()) {
       try {
         const auth = JSON.parse(localStorage.getItem(LS_AUTH));
         const status = await consumirToken(auth.token);
-        if (status !== 'ok') { logout(); return; }
-      } catch(e) { logout(); return; }
+        if (status === 'revogado' || status === 'usado') { logout(); return; }
+      } catch(e) { /* offline, prossegue */ }
     }
 
     const taxaMensal = parseDecimalBR(document.getElementById('taxaMensal').value);
@@ -901,13 +901,13 @@
   }
 
   async function calcularVenda() {
-    // Revalida token antes de calcular
+    // Revalida token antes de calcular (só bloqueia em revogado/usado)
     if (verificarAutenticacao()) {
       try {
         const auth = JSON.parse(localStorage.getItem(LS_AUTH));
         const status = await consumirToken(auth.token);
-        if (status !== 'ok') { logout(); return; }
-      } catch(e) { logout(); return; }
+        if (status === 'revogado' || status === 'usado') { logout(); return; }
+      } catch(e) { /* offline, prossegue */ }
     }
 
     const vista   = getValorVista();
@@ -1324,13 +1324,14 @@
       try {
         const auth = JSON.parse(localStorage.getItem(LS_AUTH));
         const status = await consumirToken(auth.token);
-        if (status === 'ok') {
-          mostrarApp();
-        } else {
+        if (status === 'revogado' || status === 'usado') {
           logout();
+        } else {
+          mostrarApp();
         }
       } catch (e) {
-        logout();
+        // offline — mantém acesso
+        mostrarApp();
       }
     } else {
       atualizarVersoes();
