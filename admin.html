@@ -211,8 +211,29 @@
     .tela-login h2 { font-size: 16px; }
 
     .tabela { font-size: 11px; }
-    .tabela th { font-size: 9px; letter-spacing: 1px; padding: 0 4px 8px; }
-    .tabela td { padding: 8px 4px; }
+    .tabela thead { display: none; }
+    .tabela tbody, .tabela tr { display: block; }
+    .tabela tr {
+      display: grid !important;
+      grid-template-columns: 1fr auto;
+      gap: 4px 8px;
+      background: var(--cinza);
+      border: 1px solid var(--cinza-borda);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .tabela td {
+      display: block; padding: 1px 0; border: none;
+    }
+    .tabela td:nth-child(1) { grid-column: 1; font-size: 13px; }
+    .tabela td:nth-child(2) { grid-column: 1; }
+    .tabela td:nth-child(2)::before { content: 'Cliente: '; font-size: 10px; color: var(--texto-suave); }
+    .tabela td:nth-child(3) { grid-column: 1; }
+    .tabela td:nth-child(3)::before { content: 'Criado: '; font-size: 10px; color: var(--texto-suave); }
+    .tabela td:nth-child(4) { grid-column: 1 / 2; }
+    .tabela td:nth-child(5) { grid-column: 2; grid-row: 1; align-self: start; justify-self: end; }
+    .th { font-size: 9px; letter-spacing: 1px; padding: 0 4px 8px; }
     .tk { font-size: 11px; }
     .cli { font-size: 11px; }
     .dt  { font-size: 10px; }
@@ -236,7 +257,7 @@
     <input type="password" id="inputSenha" autocomplete="off" placeholder="••••••••">
     <button class="btn" onclick="entrar()">Entrar</button>
     <div class="erro" id="erroLogin"></div>
-    <footer style="margin-top:16px;padding-top:12px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.011</footer>
+    <footer style="margin-top:16px;padding-top:12px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.012</footer>
   </div>
 </div>
 
@@ -277,7 +298,7 @@
     <button class="btn-link" onclick="sair()">Sair do painel admin</button>
   </div>
 
-  <div class="footer">v1.011 — admin</div>
+  <div class="footer">v1.012 — admin</div>
 </div>
 
 <!-- Modal de token gerado -->
