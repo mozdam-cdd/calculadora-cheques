@@ -1286,9 +1286,34 @@
     abrirPDF(doc, 'recibo-venda-a-prazo.pdf');
   }
 
-  window.onload = () => {
+  function logout() {
+    localStorage.removeItem(LS_AUTH);
+    document.getElementById('painelAdmin').classList.remove('mostrar');
+    document.getElementById('resultadosAntecip').style.display = 'none';
+    document.getElementById('resultadosVenda').style.display = 'none';
+    document.getElementById('btnImprimirRecibo').style.display = 'none';
+    const tela = document.getElementById('telaBloqueio');
+    if (tela) { tela.style.display = ''; }
+    const input = document.getElementById('inputToken');
+    if (input) { input.value = ''; }
+    const erro = document.getElementById('bloqueioErro');
+    if (erro) { erro.style.display = 'none'; }
+    atualizarVersoes();
+  }
+
+  window.onload = async () => {
     if (verificarAutenticacao()) {
-      mostrarApp();
+      try {
+        const auth = JSON.parse(localStorage.getItem(LS_AUTH));
+        const status = await consumirToken(auth.token);
+        if (status === 'ok') {
+          mostrarApp();
+        } else {
+          logout();
+        }
+      } catch (e) {
+        logout();
+      }
     } else {
       atualizarVersoes();
     }
