@@ -18,7 +18,7 @@
    ═══════════════════════════════════════ */
 :root {
   --pico-font-family: 'Sora', system-ui, sans-serif;
-  --pico-font-size: 94.75%;
+  --pico-font-size: 100%;
   --pico-line-height: 1.55;
   --pico-font-weight: 400;
   --pico-border-radius: 3px;
@@ -138,7 +138,7 @@ body {
 
 .cabecalho__selo {
   font-family: var(--fonte-valor);
-  font-size: 10px;
+  font-size: clamp(11px, 2.5vw, 13px);
   letter-spacing: 3.5px;
   text-transform: uppercase;
   color: var(--verde-cedula);
@@ -164,7 +164,7 @@ body {
 
 .cabecalho__subtitulo {
   margin-top: calc(var(--unidade) * 1);
-  font-size: 13px;
+  font-size: clamp(13px, 3.2vw, 16px);
   color: var(--tinta-preta);
   font-weight: 400;
 }
@@ -193,7 +193,7 @@ body {
   background: transparent;
   color: var(--tinta-preta);
   font-family: var(--fonte-corpo);
-  font-size: 12px;
+  font-size: clamp(12px, 2.8vw, 14px);
   font-weight: 500;
   cursor: pointer;
   transition: all .22s;
@@ -206,7 +206,7 @@ body {
 }
 
 .selo-btn__titulo {
-  font-size: 13px;
+  font-size: clamp(13px, 3vw, 16px);
   font-weight: 600;
 }
 
@@ -244,7 +244,7 @@ body {
   border: 1px solid rgba(0,107,74,0.15);
   border-radius: var(--raio-input);
   padding: 10px 14px;
-  font-size: 12px;
+  font-size: clamp(12px, 2.8vw, 14px);
   color: var(--tinta-preta);
   line-height: 1.55;
   margin-bottom: calc(var(--unidade) * 2);
@@ -284,7 +284,7 @@ body {
 
 .canhoto__selo {
   font-family: var(--fonte-valor);
-  font-size: 10px;
+  font-size: clamp(11px, 2.4vw, 13px);
   letter-spacing: 2.5px;
   text-transform: uppercase;
   color: var(--verde-cedula);
@@ -322,7 +322,7 @@ body {
 }
 
 .campo label {
-  font-size: 11px;
+  font-size: clamp(12px, 2.8vw, 14px);
   color: var(--tinta-preta);
   font-weight: 600;
   letter-spacing: .3px;
@@ -331,7 +331,7 @@ body {
 .campo input,
 .campo select {
   font-family: var(--fonte-valor);
-  font-size: 14px;
+  font-size: 16px;
   background: var(--papel-canhoto);
   border: 1px solid var(--linha-cheque);
   border-radius: var(--raio-input);
@@ -388,7 +388,7 @@ body {
 
 .cheque-item__num {
   font-family: var(--fonte-valor);
-  font-size: 11px;
+  font-size: clamp(11px, 2.5vw, 13px);
   letter-spacing: 2px;
   color: var(--verde-cedula);
 }
@@ -421,7 +421,7 @@ body {
   border: 1px solid rgba(0,107,74,0.2);
   color: var(--verde-cedula);
   font-family: var(--fonte-valor);
-  font-size: 13px;
+  font-size: clamp(13px, 3vw, 15px);
   font-weight: 600;
   border-radius: 4px;
   padding: 8px 14px;
@@ -430,7 +430,7 @@ body {
 }
 
 .parcela-vencimentos {
-  font-size: 11px;
+  font-size: clamp(11px, 2.5vw, 13px);
   color: var(--tinta-preta);
   font-style: italic;
   line-height: 1.6;
@@ -442,7 +442,7 @@ body {
   border-radius: var(--raio-input);
   padding: 8px 14px;
   font-family: var(--fonte-valor);
-  font-size: 13px;
+  font-size: clamp(13px, 2.8vw, 15px);
   color: var(--tinta-preta);
   text-align: right;
   white-space: nowrap;
@@ -464,7 +464,7 @@ body {
   border-radius: var(--raio-input);
   padding: 14px;
   font-family: var(--fonte-display);
-  font-size: 15px;
+  font-size: clamp(15px, 3.4vw, 18px);
   font-weight: 700;
   letter-spacing: .3px;
   cursor: pointer;
@@ -491,7 +491,7 @@ body {
   border-radius: var(--raio-input);
   color: var(--verde-cedula);
   font-family: var(--fonte-corpo);
-  font-size: 13px;
+  font-size: clamp(13px, 3vw, 15px);
   font-weight: 600;
   padding: 10px;
   cursor: pointer;
@@ -538,7 +538,7 @@ body {
   border-radius: var(--raio-input);
   color: var(--verde-cedula);
   font-family: var(--fonte-corpo);
-  font-size: 14px;
+  font-size: clamp(14px, 3vw, 16px);
   font-weight: 600;
   padding: 12px;
   cursor: pointer;
@@ -597,13 +597,13 @@ body {
 
 .res-parcelas {
   font-family: var(--fonte-valor);
-  font-size: 13px;
+  font-size: clamp(13px, 2.8vw, 15px);
   color: var(--verde-cedula);
   font-weight: 600;
 }
 
 .res-vista {
-  font-size: 12px;
+  font-size: clamp(12px, 2.6vw, 14px);
   color: var(--tinta-preta);
   margin-top: 2px;
 }
@@ -660,7 +660,7 @@ body {
 }
 
 .res-footer__acrescimo {
-  font-size: 12px;
+  font-size: clamp(12px, 2.6vw, 14px);
   color: var(--tinta-preta);
 }
 
@@ -672,7 +672,7 @@ body {
 .res-footer__total {
   font-family: var(--fonte-display);
   font-weight: 700;
-  font-size: 17px;
+  font-size: clamp(15px, 3.8vw, 20px);
   color: var(--verde-cedula);
 }
 
@@ -718,7 +718,7 @@ body {
 }
 
 .res-cheque__rotulo {
-  font-size: 12px;
+  font-size: clamp(12px, 2.8vw, 14px);
   color: var(--tinta-preta);
   font-weight: 600;
 }
@@ -726,13 +726,13 @@ body {
 .res-cheque__valor {
   font-family: var(--fonte-display);
   font-weight: 700;
-  font-size: 19px;
+  font-size: clamp(17px, 4.2vw, 22px);
   line-height: 1.1;
 }
 
 .res-cheque__data {
   font-family: var(--fonte-valor);
-  font-size: 11px;
+  font-size: clamp(11px, 2.3vw, 13px);
   background: rgba(0,107,74,0.07);
   border: 1px solid rgba(0,107,74,0.18);
   color: var(--verde-cedula);
@@ -748,7 +748,7 @@ body {
 }
 
 .res-cheque__campo-label {
-  font-size: 11px;
+  font-size: clamp(11px, 2.5vw, 13px);
   color: var(--tinta-preta);
   font-weight: 600;
   margin-bottom: 2px;
@@ -756,7 +756,7 @@ body {
 
 .res-cheque__campo-num {
   font-family: var(--fonte-valor);
-  font-size: 14px;
+  font-size: clamp(14px, 3.2vw, 16px);
   font-weight: 500;
 }
 
@@ -787,7 +787,7 @@ body {
 .totalizador__item { padding: 0 10px; }
 
 .totalizador__label {
-  font-size: 10px;
+  font-size: clamp(10px, 2.2vw, 12px);
   color: var(--tinta-preta);
   font-weight: 600;
   letter-spacing: .4px;
@@ -802,7 +802,7 @@ body {
 
 .totalizador__nota {
   margin-top: 16px;
-  font-size: 12px;
+  font-size: clamp(12px, 2.6vw, 14px);
   color: var(--tinta-preta);
   line-height: 1.6;
   text-align: center;
@@ -839,13 +839,13 @@ body {
 .bloqueio-card h2 {
   font-family: var(--fonte-display);
   font-weight: 700;
-  font-size: 18px;
+  font-size: clamp(17px, 4vw, 22px);
   color: var(--tinta-azul);
   margin-bottom: 6px;
 }
 
 .bloqueio-card p {
-  font-size: 12px;
+  font-size: clamp(12px, 2.8vw, 14px);
   color: var(--tinta-preta);
   margin-bottom: 16px;
   line-height: 1.5;
@@ -881,7 +881,7 @@ body {
   border-radius: var(--raio-input);
   padding: 14px;
   font-family: var(--fonte-display);
-  font-size: 15px;
+  font-size: clamp(15px, 3.4vw, 18px);
   font-weight: 700;
   cursor: pointer;
   transition: all .18s;
@@ -937,7 +937,7 @@ body {
   padding-top: calc(var(--unidade) * 2);
   border-top: 1px solid var(--linha-divisao);
   font-family: var(--fonte-valor);
-  font-size: 10px;
+  font-size: clamp(10px, 2vw, 12px);
   letter-spacing: 2px;
   color: var(--tinta-fraca);
 }
@@ -953,22 +953,18 @@ body {
   .grade--2, .grade--3 { grid-template-columns: 1fr; }
 
   .campo input, .campo select {
-    font-size: 16px; /* Evita zoom no iOS */
     padding: 13px 11px;
   }
 
   .cheque-item__grade { grid-template-columns: 1fr; }
 
   .cabecalho h1 { font-size: clamp(20px, 7vw, 28px); }
-  .cabecalho__selo { font-size: 9px; letter-spacing: 3px; }
-  .cabecalho__subtitulo { font-size: 11px; }
 
   .selo-duplo { padding: 2px; gap: 1px; }
   .selo-btn { padding: 10px 5px 8px; }
   .selo-btn__dica { display: none; }
 
   .canhoto { padding: 16px 12px 14px; margin-bottom: 14px; }
-  .canhoto__selo { font-size: 9px; letter-spacing: 2px; }
 
   .totalizador {
     grid-template-columns: 1fr;
