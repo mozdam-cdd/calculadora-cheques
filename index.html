@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* ═══════════════════════════════════════
@@ -59,7 +59,7 @@
 
   --fonte-valor:   'DM Mono', monospace;
   --fonte-corpo:   'Sora', sans-serif;
-  --fonte-display: 'Merriweather', serif;
+  --fonte-display: 'Sora', sans-serif;
 }
 
 /* Override Pico with Casa Bancária tokens */
@@ -156,7 +156,8 @@ body {
 }
 
 .cabecalho h1 em {
-  font-style: italic;
+  font-style: normal;
+  letter-spacing: -0.5px;
   color: var(--verde-cedula);
   font-weight: 400;
 }
