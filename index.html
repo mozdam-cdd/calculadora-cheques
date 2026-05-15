@@ -1,1360 +1,2110 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculadora de Cheques Pré-datados</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f5f0e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Calculadora de Cheques &mdash; Casa Banc&aacute;ria</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  :root {
-    --verde: #00c97a; --verde-escuro: #009b5c;
-    --azul: #4d9fff;  --azul-escuro: #2d7fe0;
-    --preto: #0a0f0d; --cinza-escuro: #131a16;
-    --cinza: #1e2921; --cinza-borda: #2d3d33;
-    --texto: #e8f5ee; --texto-suave: #7a9e87;
-    --amarelo: #f5c842; --vermelho: #ff5e5e;
-    --accent: var(--azul); --accent-escuro: var(--azul-escuro);
-    --accent-bg: rgba(77,159,255,0.12); --accent-borda: rgba(77,159,255,0.25);
+/* ═══════════════════════════════════════
+   1. RESET & ANCORAS (Pico overrides)
+   ═══════════════════════════════════════ */
+:root {
+  --pico-font-family: 'Sora', system-ui, sans-serif;
+  --pico-font-size: 94.75%;
+  --pico-line-height: 1.55;
+  --pico-font-weight: 400;
+  --pico-border-radius: 3px;
+  --pico-block-spacing-vertical: 1.25rem;
+  --pico-block-spacing-horizontal: 1.25rem;
+  --pico-spacing: 1rem;
+  --pico-typography-font-weight: 400;
+}
+
+[x-cloak] { display: none !important; }
+
+/* ═══════════════════════════════════════
+   2. TOKENS — Casa Bancária
+   ═══════════════════════════════════════ */
+:root {
+  --papel-fundo:   #f5f0e8;
+  --papel-canhoto: #fafaf6;
+  --papel-recibo:  #ffffff;
+  --papel-sujo:    #efe8db;
+
+  --tinta-azul:    #152238;
+  --tinta-preta:   #4a4d52;
+  --tinta-fraca:   #97968f;
+
+  --verde-cedula:  #006b4a;
+  --verde-claro:   #1e8449;
+  --vermelho-carim: #b3302c;
+  --dourado:       #9e7a0e;
+
+  --linha-picote:  #bcb09b;
+  --linha-cheque:  #d6cfbd;
+  --linha-divisao: #e6dfd0;
+
+  --unidade: 8px;
+  --raio-input:   3px;
+  --raio-canhoto: 4px;
+  --largura-max:  640px;
+
+  --fonte-valor:   'DM Mono', monospace;
+  --fonte-corpo:   'Sora', sans-serif;
+  --fonte-display: 'Merriweather', serif;
+}
+
+/* Override Pico with Casa Bancária tokens */
+:root {
+  --pico-background-color: var(--papel-fundo);
+  --pico-color: var(--tinta-azul);
+  --pico-muted-color: var(--tinta-preta);
+  --pico-h1-color: var(--tinta-azul);
+  --pico-h2-color: var(--tinta-azul);
+  --pico-h3-color: var(--tinta-azul);
+
+  --pico-primary: var(--verde-cedula);
+  --pico-primary-background: var(--verde-cedula);
+  --pico-primary-hover: #00583b;
+  --pico-primary-hover-background: #00583b;
+  --pico-primary-focus: rgba(0,107,74,0.25);
+  --pico-primary-inverse: #fff;
+
+  --pico-form-element-background-color: var(--papel-canhoto);
+  --pico-form-element-border-color: var(--linha-cheque);
+  --pico-form-element-color: var(--tinta-azul);
+  --pico-form-element-placeholder-color: var(--tinta-fraca);
+  --pico-form-element-active-border-color: var(--verde-cedula);
+  --pico-form-element-focus-color: rgba(0,107,74,0.2);
+  --pico-form-element-disabled-background-color: var(--papel-sujo);
+
+  --pico-card-background-color: var(--papel-canhoto);
+  --pico-card-border-color: var(--linha-cheque);
+  --pico-card-sectioning-background-color: var(--papel-fundo);
+
+  --pico-table-border-color: var(--linha-divisao);
+  --pico-table-row-stripped-background-color: rgba(0,0,0,0.02);
+
+  --pico-del-color: var(--vermelho-carim);
+  --pico-ins-color: var(--verde-claro);
+  --pico-mark-background-color: rgba(158,122,14,0.18);
+  --pico-mark-color: var(--tinta-azul);
+}
+
+/* ═══════════════════════════════════════
+   3. BASE
+   ═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--papel-fundo);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(130,110,80,0.018) 3px, rgba(130,110,80,0.018) 5px);
+  color: var(--tinta-azul);
+  font-family: var(--fonte-corpo);
+  font-weight: 400;
+  min-height: 100dvh;
+  padding: 0 0 env(safe-area-inset-bottom, 24px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+  max-width: var(--largura-max);
+  margin: 0 auto;
+  padding: calc(var(--unidade) * 2.5) calc(var(--unidade) * 2) calc(var(--unidade) * 5);
+}
+
+/* ═══════════════════════════════════════
+   4. TIPOGRAFIA DO CABEÇALHO
+   ═══════════════════════════════════════ */
+.cabecalho {
+  text-align: center;
+  margin-bottom: calc(var(--unidade) * 3);
+}
+
+.cabecalho__selo {
+  font-family: var(--fonte-valor);
+  font-size: 10px;
+  letter-spacing: 3.5px;
+  text-transform: uppercase;
+  color: var(--verde-cedula);
+  margin-bottom: calc(var(--unidade) * 1.5);
+  opacity: .75;
+}
+
+.cabecalho h1 {
+  font-family: var(--fonte-display);
+  font-weight: 700;
+  font-size: clamp(22px, 5vw, 34px);
+  line-height: 1.15;
+  color: var(--tinta-azul);
+  margin-bottom: 0;
+}
+
+.cabecalho h1 em {
+  font-style: italic;
+  color: var(--verde-cedula);
+  font-weight: 400;
+}
+
+.cabecalho__subtitulo {
+  margin-top: calc(var(--unidade) * 1);
+  font-size: 13px;
+  color: var(--tinta-preta);
+  font-weight: 400;
+}
+
+/* ═══════════════════════════════════════
+   5. SELO DUPLO (toggle venda/antecipação)
+   ═══════════════════════════════════════ */
+.selo-duplo {
+  display: flex;
+  gap: 2px;
+  margin-bottom: calc(var(--unidade) * 2.5);
+  background: #e8dfcf;
+  border-radius: var(--raio-input);
+  padding: 3px;
+}
+
+.selo-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--tinta-preta);
+  font-family: var(--fonte-corpo);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .22s;
+  position: relative;
+}
+
+.selo-btn__icone {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.selo-btn__titulo {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.selo-btn__dica {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: .6;
+  display: none;
+}
+
+.selo-btn--ativo {
+  background: var(--papel-canhoto);
+  border-color: var(--linha-cheque);
+  color: var(--tinta-azul);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.selo-btn--ativo::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 3px;
+  background: var(--verde-cedula);
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════
+   6. INFO BOX
+   ═══════════════════════════════════════ */
+.info-box {
+  background: rgba(0,107,74,0.06);
+  border: 1px solid rgba(0,107,74,0.15);
+  border-radius: var(--raio-input);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--tinta-preta);
+  line-height: 1.55;
+  margin-bottom: calc(var(--unidade) * 2);
+}
+
+.info-box strong {
+  color: var(--verde-cedula);
+}
+
+/* ═══════════════════════════════════════
+   7. CANHOTO CARD
+   ═══════════════════════════════════════ */
+.canhoto {
+  position: relative;
+  background: var(--papel-canhoto);
+  border: 1px solid var(--linha-cheque);
+  border-radius: 0 0 var(--raio-canhoto) var(--raio-canhoto);
+  padding: 22px 18px 18px;
+  margin-bottom: calc(var(--unidade) * 2);
+}
+
+.canhoto::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  right: -1px;
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 3px,
+    var(--linha-picote) 3px,
+    var(--linha-picote) 5px
+  );
+}
+
+.canhoto__selo {
+  font-family: var(--fonte-valor);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--verde-cedula);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: .8;
+}
+
+.canhoto__selo::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--verde-cedula);
+  border-radius: 50%;
+  opacity: .6;
+}
+
+.canhoto--sem-picote::before { display: none; }
+.canhoto--sem-picote { border-radius: var(--raio-canhoto); }
+
+/* ═══════════════════════════════════════
+   8. FORMULÁRIO (sobre Pico)
+   ═══════════════════════════════════════ */
+.grade { display: grid; gap: 12px; }
+.grade--2 { grid-template-columns: 1fr 1fr; }
+.grade--3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo label {
+  font-size: 11px;
+  color: var(--tinta-preta);
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+
+.campo input,
+.campo select {
+  font-family: var(--fonte-valor);
+  font-size: 14px;
+  background: var(--papel-canhoto);
+  border: 1px solid var(--linha-cheque);
+  border-radius: var(--raio-input);
+  padding: 10px 12px;
+  color: var(--tinta-azul);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+}
+
+.campo input:focus,
+.campo select:focus {
+  border-color: var(--verde-cedula);
+  box-shadow: 0 0 0 3px rgba(0,107,74,0.08);
+}
+
+.campo input::placeholder {
+  color: var(--tinta-fraca);
+  opacity: .6;
+}
+
+.campo input:disabled {
+  background: var(--papel-sujo);
+  color: var(--tinta-fraca);
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.campo select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%234a4d52' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* ═══════════════════════════════════════
+   9. CHEQUES (lista antecipação)
+   ═══════════════════════════════════════ */
+.cheque-item {
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--linha-divisao);
+  border-radius: var(--raio-input);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.cheque-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.cheque-item__num {
+  font-family: var(--fonte-valor);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--verde-cedula);
+}
+
+.cheque-item__grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ═══════════════════════════════════════
+   10. PARCELAS (tabela venda)
+   ═══════════════════════════════════════ */
+.parcela-linha {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--linha-divisao);
+}
+
+.parcela-linha:last-child { border-bottom: none; }
+
+.parcela-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,107,74,0.08);
+  border: 1px solid rgba(0,107,74,0.2);
+  color: var(--verde-cedula);
+  font-family: var(--fonte-valor);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 8px 14px;
+  min-width: 48px;
+  white-space: nowrap;
+}
+
+.parcela-vencimentos {
+  font-size: 11px;
+  color: var(--tinta-preta);
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.parcela-valor {
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--linha-divisao);
+  border-radius: var(--raio-input);
+  padding: 8px 14px;
+  font-family: var(--fonte-valor);
+  font-size: 13px;
+  color: var(--tinta-preta);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.parcela-valor--ok {
+  border-color: rgba(0,107,74,0.2);
+  color: var(--verde-cedula);
+}
+
+/* ═══════════════════════════════════════
+   11. BOTÕES
+   ═══════════════════════════════════════ */
+.btn-acao {
+  width: 100%;
+  background: var(--verde-cedula);
+  color: #fff;
+  border: none;
+  border-radius: var(--raio-input);
+  padding: 14px;
+  font-family: var(--fonte-display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  cursor: pointer;
+  transition: all .18s;
+  margin-top: 4px;
+}
+
+.btn-acao:hover {
+  background: #00583b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.btn-acao:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.btn-adicionar {
+  margin-top: 12px;
+  width: 100%;
+  background: transparent;
+  border: 1px dashed rgba(0,107,74,0.35);
+  border-radius: var(--raio-input);
+  color: var(--verde-cedula);
+  font-family: var(--fonte-corpo);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-adicionar:hover {
+  border-color: var(--verde-cedula);
+  background: rgba(0,107,74,0.04);
+}
+
+.btn-remover {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  background: transparent;
+  border: 1px solid rgba(179,48,44,0.25);
+  border-radius: var(--raio-input);
+  color: var(--vermelho-carim);
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-remover:hover {
+  background: rgba(179,48,44,0.06);
+  border-color: var(--vermelho-carim);
+}
+
+.btn-recibo {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--linha-picote);
+  border-radius: var(--raio-input);
+  color: var(--verde-cedula);
+  font-family: var(--fonte-corpo);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  transition: all .2s;
+  margin-top: 18px;
+}
+
+.btn-recibo:hover {
+  border-color: var(--verde-cedula);
+  background: rgba(0,107,74,0.04);
+}
+
+.btn-recibo-mini {
+  background: transparent;
+  border: 1px solid var(--linha-cheque);
+  border-radius: var(--raio-input);
+  color: var(--tinta-fraca);
+  font-size: 15px;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  padding: 0;
+}
+
+.btn-recibo-mini:hover {
+  border-color: var(--verde-cedula);
+  color: var(--verde-cedula);
+  background: rgba(0,107,74,0.04);
+}
+
+/* ═══════════════════════════════════════
+   12. RESULTADOS
+   ═══════════════════════════════════════ */
+.resultado-bloco {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed var(--linha-divisao);
+}
+
+.resultado-bloco:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.res-cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.res-parcelas {
+  font-family: var(--fonte-valor);
+  font-size: 13px;
+  color: var(--verde-cedula);
+  font-weight: 600;
+}
+
+.res-vista {
+  font-size: 12px;
+  color: var(--tinta-preta);
+  margin-top: 2px;
+}
+
+.res-vista strong {
+  color: var(--tinta-azul);
+}
+
+/* Venda: tabela detalhada */
+.res-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.res-tabela th {
+  font-family: var(--fonte-valor);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--tinta-preta);
+  font-weight: 500;
+  padding: 0 8px 6px;
+  text-align: left;
+}
+
+.res-tabela th:last-child { text-align: right; }
+
+.res-tabela td {
+  padding: 5px 8px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--linha-divisao);
+  font-family: var(--fonte-valor);
+  color: var(--tinta-azul);
+}
+
+.res-tabela td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: var(--tinta-azul);
+}
+
+.res-tabela tr:last-child td { border-bottom: none; }
+
+.res-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--linha-divisao);
+  border-radius: var(--raio-input);
+}
+
+.res-footer__acrescimo {
+  font-size: 12px;
+  color: var(--tinta-preta);
+}
+
+.res-footer__acrescimo span {
+  color: var(--dourado);
+  font-family: var(--fonte-valor);
+}
+
+.res-footer__total {
+  font-family: var(--fonte-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--verde-cedula);
+}
+
+/* Antecip: cada cheque resultado */
+.res-cheque {
+  position: relative;
+  background: var(--papel-recibo);
+  border: 1px solid var(--linha-cheque);
+  border-radius: 0 0 3px 3px;
+  padding: 16px 14px 14px;
+  margin-bottom: 12px;
+  animation: subirPapel .4s ease both;
+}
+
+.res-cheque::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    var(--linha-picote) 2px,
+    var(--linha-picote) 4px
+  );
+}
+
+@keyframes subirPapel {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.res-cheque__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--linha-divisao);
+}
+
+.res-cheque__rotulo {
+  font-size: 12px;
+  color: var(--tinta-preta);
+  font-weight: 600;
+}
+
+.res-cheque__valor {
+  font-family: var(--fonte-display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.res-cheque__data {
+  font-family: var(--fonte-valor);
+  font-size: 11px;
+  background: rgba(0,107,74,0.07);
+  border: 1px solid rgba(0,107,74,0.18);
+  color: var(--verde-cedula);
+  padding: 3px 9px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.res-cheque__grade {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.res-cheque__campo-label {
+  font-size: 11px;
+  color: var(--tinta-preta);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.res-cheque__campo-num {
+  font-family: var(--fonte-valor);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.res-cheque__recebe {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--linha-divisao);
+}
+
+/* ═══════════════════════════════════════
+   13. TOTALIZADOR / BORDERÔ
+   ═══════════════════════════════════════ */
+.totalizador {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  text-align: center;
+}
+
+.totalizador__div {
+  width: 1px;
+  height: 36px;
+  background: var(--linha-divisao);
+  justify-self: center;
+}
+
+.totalizador__item { padding: 0 10px; }
+
+.totalizador__label {
+  font-size: 10px;
+  color: var(--tinta-preta);
+  font-weight: 600;
+  letter-spacing: .4px;
+  margin-bottom: 4px;
+}
+
+.totalizador__valor {
+  font-family: var(--fonte-display);
+  font-weight: 700;
+  font-size: clamp(16px, 3.5vw, 22px);
+}
+
+.totalizador__nota {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--tinta-preta);
+  line-height: 1.6;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════
+   14. TELA DE BLOQUEIO
+   ═══════════════════════════════════════ */
+.tela-bloqueio {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--papel-fundo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.tela-bloqueio article {
+  width: 100%;
+  max-width: 340px;
+}
+
+.bloqueio-card {
+  text-align: center;
+}
+
+.bloqueio-icone {
+  font-size: 44px;
+  margin-bottom: 10px;
+}
+
+.bloqueio-card h2 {
+  font-family: var(--fonte-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--tinta-azul);
+  margin-bottom: 6px;
+}
+
+.bloqueio-card p {
+  font-size: 12px;
+  color: var(--tinta-preta);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.bloqueio-input {
+  width: 100%;
+  text-align: center;
+  background: var(--papel-canhoto);
+  border: 1px solid var(--linha-cheque);
+  border-radius: var(--raio-input);
+  padding: 13px;
+  color: var(--tinta-azul);
+  font-family: var(--fonte-valor);
+  font-size: 16px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  outline: none;
+  margin-bottom: 12px;
+  transition: border-color .2s;
+}
+
+.bloqueio-input:focus {
+  border-color: var(--verde-cedula);
+  box-shadow: 0 0 0 3px rgba(0,107,74,0.08);
+}
+
+.bloqueio-btn {
+  width: 100%;
+  background: var(--verde-cedula);
+  color: #fff;
+  border: none;
+  border-radius: var(--raio-input);
+  padding: 14px;
+  font-family: var(--fonte-display);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .18s;
+}
+
+.bloqueio-btn:hover { background: #00583b; }
+.bloqueio-btn:active { transform: translateY(1px); }
+.bloqueio-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.bloqueio-erro {
+  color: var(--vermelho-carim);
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.bloqueio-link {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--tinta-fraca);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: var(--fonte-corpo);
+  transition: color .2s;
+}
+
+.bloqueio-link:hover { color: var(--verde-cedula); }
+
+.bloqueio-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--linha-divisao);
+  font-family: var(--fonte-valor);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--tinta-fraca);
+}
+
+/* ═══════════════════════════════════════
+   15. CORES DE TINTA (utilitários)
+   ═══════════════════════════════════════ */
+.tinta-azul     { color: var(--tinta-azul) !important; }
+.tinta-verde    { color: var(--verde-claro) !important; }
+.tinta-vermelha { color: var(--vermelho-carim) !important; }
+.tinta-dourada  { color: var(--dourado) !important; }
+
+/* ═══════════════════════════════════════
+   16. RODAPÉ
+   ═══════════════════════════════════════ */
+.rodape {
+  text-align: center;
+  margin-top: calc(var(--unidade) * 4);
+  padding-top: calc(var(--unidade) * 2);
+  border-top: 1px solid var(--linha-divisao);
+  font-family: var(--fonte-valor);
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--tinta-fraca);
+}
+
+/* ═══════════════════════════════════════
+   17. MOBILE (< 520px)
+   ═══════════════════════════════════════ */
+@media (max-width: 520px) {
+  .container {
+    padding: calc(var(--unidade) * 2) calc(var(--unidade) * 1.5) calc(var(--unidade) * 4);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--preto); color: var(--texto);
-    font-family: 'Sora', sans-serif; min-height: 100vh; padding: 24px 16px 60px;
-    background-image:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(77,159,255,0.1) 0%, transparent 70%),
-      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(77,159,255,0.025) 40px);
-  }
-  body.modo-antecip {
-    background-image:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,201,122,0.1) 0%, transparent 70%),
-      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,201,122,0.025) 40px),
-      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,201,122,0.025) 40px);
-    --accent: var(--verde); --accent-escuro: var(--verde-escuro);
-    --accent-bg: rgba(0,201,122,0.12); --accent-borda: rgba(0,201,122,0.25);
+
+  .grade--2, .grade--3 { grid-template-columns: 1fr; }
+
+  .campo input, .campo select {
+    font-size: 16px; /* Evita zoom no iOS */
+    padding: 13px 11px;
   }
 
-  .container { max-width: 700px; margin: 0 auto; }
+  .cheque-item__grade { grid-template-columns: 1fr; }
 
-  /* HEADER */
-  header { text-align: center; margin-bottom: 28px; }
-  header .label { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:4px; text-transform:uppercase; color:var(--accent); margin-bottom:10px; opacity:.8; }
-  header h1 { font-family:'Sora',sans-serif; font-weight:700; font-size:clamp(24px,5.5vw,38px); line-height:1.1; }
-  header h1 em { font-style:italic; color:var(--accent); }
-  header p { margin-top:8px; font-size:13px; color:var(--texto-suave); font-weight:300; }
+  .cabecalho h1 { font-size: clamp(20px, 7vw, 28px); }
+  .cabecalho__selo { font-size: 9px; letter-spacing: 3px; }
+  .cabecalho__subtitulo { font-size: 11px; }
 
-  /* TOGGLE */
-  .toggle-wrap { display:flex; background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:14px; padding:5px; margin-bottom:20px; gap:4px; }
-  .toggle-btn { flex:1; padding:12px 8px; border:none; border-radius:10px; background:transparent; color:var(--texto-suave); font-family:'Sora',sans-serif; cursor:pointer; transition:all .25s; display:flex; flex-direction:column; align-items:center; gap:3px; }
-  .toggle-btn .tb-icon { font-size:20px; }
-  .toggle-btn .tb-title { font-size:13px; font-weight:700; }
-  .toggle-btn .tb-sub { font-size:10px; font-weight:400; opacity:.65; }
-  .toggle-btn.ativo { background:var(--accent); color:var(--preto); }
+  .selo-duplo { padding: 2px; gap: 1px; }
+  .selo-btn { padding: 10px 5px 8px; }
+  .selo-btn__dica { display: none; }
 
-  /* INFO BOX */
-  .info-box { background:var(--accent-bg); border:1px solid var(--accent-borda); border-radius:10px; padding:11px 15px; font-size:12px; color:var(--texto-suave); line-height:1.6; margin-bottom:18px; }
-  .info-box strong { color:var(--accent); }
+  .canhoto { padding: 16px 12px 14px; margin-bottom: 14px; }
+  .canhoto__selo { font-size: 9px; letter-spacing: 2px; }
 
-  /* CARD */
-  .card { background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:16px; padding:22px; margin-bottom:18px; }
-  .card-title { font-family:'DM Mono',monospace; font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--accent); margin-bottom:18px; display:flex; align-items:center; gap:8px; }
-  .card-title::before { content:''; display:inline-block; width:6px; height:6px; background:var(--accent); border-radius:50%; }
-
-  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
-  .row:last-child { margin-bottom:0; }
-  .row.cols3 { grid-template-columns:1fr 1fr 1fr; }
-  .field { display:flex; flex-direction:column; gap:5px; }
-  .field label { font-size:11px; color:var(--texto-suave); font-weight:600; letter-spacing:.5px; }
-  .field input, .field select {
-    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:10px;
-    padding:11px 13px; color:var(--texto); font-family:'DM Mono',monospace; font-size:14px;
-    outline:none; transition:border-color .2s,box-shadow .2s; width:100%;
+  .totalizador {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
-  .field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
-  .field input::placeholder { color:var(--texto-suave); opacity:.45; }
+  .totalizador__div { display: none; }
+  .totalizador__item { padding: 0; }
 
-  /* ── ANTECIPAÇÃO: cheques livres ── */
-  #secaoAntecip { display:none; }
-  #secaoVenda   { display:block; }
-  body.modo-antecip #secaoAntecip { display:block; }
-  body.modo-antecip #secaoVenda   { display:none; }
-
-  .cheques-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .btn-add { background:transparent; border:1px dashed var(--cinza-borda); border-radius:8px; color:var(--accent); font-family:'Sora',sans-serif; font-size:13px; font-weight:600; padding:8px 14px; cursor:pointer; transition:all .2s; }
-  .btn-add:hover { border-color:var(--accent); background:var(--accent-bg); }
-
-  .cheque-item { background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:12px; padding:14px; margin-bottom:10px; transition:border-color .2s; }
-  .cheque-item:hover { border-color:var(--accent-borda); }
-  .cheque-num { font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); letter-spacing:2px; margin-bottom:10px; }
-  .cheque-row { display:grid; grid-template-columns:1fr 1fr auto; gap:10px; align-items:end; }
-
-  .btn-remove { background:transparent; border:1px solid rgba(255,94,94,.3); border-radius:8px; color:var(--vermelho); font-size:18px; width:40px; height:40px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
-  .btn-remove:hover { background:rgba(255,94,94,.1); border-color:var(--vermelho); }
-
-  /* ── VENDA A PRAZO: tabela de parcelas ── */
-  .parcelas-table { width:100%; border-collapse:collapse; }
-
-  /* Cabeçalho da tabela */
-  .parcelas-table thead tr th {
-    font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
-    text-transform:uppercase; color:var(--texto-suave); font-weight:500;
-    padding:0 10px 10px; text-align:left;
+  .parcela-linha {
+    display: grid !important;
+    grid-template-columns: auto 1fr;
+    gap: 4px 10px;
+    padding: 12px 10px;
+    background: rgba(0,0,0,0.015);
+    border: 1px solid var(--linha-divisao);
+    border-radius: var(--raio-input);
+    margin-bottom: 8px;
   }
-  .parcelas-table thead tr th:last-child { width:44px; }
+  .parcela-linha > :nth-child(1) { grid-column: 1; grid-row: 1; }
+  .parcela-linha > :nth-child(2) { grid-column: 1 / 3; grid-row: 2; font-size: 11px; }
+  .parcela-linha > :nth-child(3) { grid-column: 1 / 3; grid-row: 3; display: flex; gap: 6px; align-items: center; }
+  .parcela-linha .btn-remover { margin-left: auto; }
+  .parcela-linha .parcela-valor { flex: 1; text-align: center; font-size: 13px; }
 
-  /* Linhas */
-  .parcela-row td { padding:5px 6px; vertical-align:middle; }
-  .parcela-row:last-child td { padding-bottom:0; }
-
-  /* Badge de parcelas */
-  .parcela-badge {
-    display:inline-flex; align-items:center; justify-content:center;
-    background:var(--accent-bg); border:1px solid var(--accent-borda);
-    color:var(--accent); font-family:'DM Mono',monospace; font-size:12px; font-weight:600;
-    border-radius:8px; padding:0 10px; height:40px; white-space:nowrap; min-width:52px;
+  .res-cheque__grade { grid-template-columns: 1fr 1fr; }
+  .res-tabela thead { display: none; }
+  .res-tabela tbody, .res-tabela tr { display: block; }
+  .res-tabela tr {
+    display: grid !important;
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 6px;
+    border-bottom: 1px solid var(--linha-divisao) !important;
+    padding: 6px 4px !important;
   }
+  .res-tabela td { display: block !important; padding: 1px 4px !important; border: none !important; }
+  .res-tabela td:nth-child(2) { grid-column: 2 / 4; }
+  .res-tabela td:last-child { text-align: right !important; }
 
-  /* Resultado calculado na linha */
-  .parcela-resultado {
-    background:var(--cinza); border:1px solid var(--cinza-borda); border-radius:8px;
-    padding:0 12px; height:40px; display:flex; align-items:center;
-    font-family:'DM Mono',monospace; font-size:13px; color:var(--texto-suave);
-    white-space:nowrap;
+  .res-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
-  .parcela-resultado.calculado { color:var(--azul); border-color:var(--accent-borda); }
-
-  /* Botão + adicionar parcela */
-  .btn-add-parcela {
-    margin-top:14px; width:100%; background:transparent;
-    border:1px dashed var(--cinza-borda); border-radius:10px;
-    color:var(--accent); font-family:'Sora',sans-serif; font-size:13px; font-weight:600;
-    padding:11px; cursor:pointer; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:6px;
-  }
-  .btn-add-parcela:hover { border-color:var(--accent); background:var(--accent-bg); }
-
-  /* BOTÃO CALCULAR */
-  .btn-calcular { width:100%; background:var(--accent); color:var(--preto); border:none; border-radius:12px; padding:15px; font-family:'Sora',sans-serif; font-size:16px; font-weight:700; letter-spacing:.5px; cursor:pointer; transition:all .2s; margin-top:4px; }
-  .btn-calcular:hover { filter:brightness(.88); transform:translateY(-1px); box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  .btn-calcular:active { transform:translateY(0); }
-
-  /* RESULTADOS ANTECIPAÇÃO */
-  #resultadosAntecip { display:none; }
-  .resultado-cheque { background:var(--cinza-escuro); border:1px solid var(--cinza-borda); border-radius:14px; padding:18px; margin-bottom:14px; animation:fadeUp .4s ease forwards; opacity:0; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-  .res-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--cinza-borda); }
-  .res-titulo { font-size:12px; color:var(--texto-suave); font-weight:600; }
-  .res-valor-original { font-family:'Sora',sans-serif; font-weight:700; font-size:20px; }
-  .res-badge { font-family:'DM Mono',monospace; font-size:11px; background:var(--accent-bg); border:1px solid var(--accent-borda); color:var(--accent); padding:4px 10px; border-radius:20px; white-space:nowrap; }
-  .res-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-  .res-item .res-label { font-size:11px; color:var(--texto-suave); margin-bottom:3px; font-weight:600; }
-  .res-item .res-num { font-family:'DM Mono',monospace; font-size:14px; font-weight:500; }
-
-  /* RESULTADOS VENDA */
-  #resultadosVenda { display:none; }
-  .vres-table { width:100%; border-collapse:collapse; margin-top:4px; }
-  .vres-table thead th { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--texto-suave); padding:0 12px 10px; text-align:left; }
-  .vres-row { border-bottom:1px solid var(--cinza-borda); }
-  .vres-row:last-child { border-bottom:none; }
-  .vres-row td { padding:12px; }
-  .vres-parcelas { font-family:'DM Mono',monospace; font-size:13px; color:var(--accent); font-weight:700; }
-  .vres-datas { font-size:11px; color:var(--texto-suave); line-height:1.7; }
-  .vres-cada { font-family:'DM Mono',monospace; font-size:14px; color:var(--amarelo); }
-  .vres-total { font-family:'DM Mono',monospace; font-size:15px; color:var(--azul); font-weight:700; }
-  .vres-acrescimo { font-size:11px; color:var(--texto-suave); }
-
-  /* TOTALIZADOR */
-  .totalizador { background:linear-gradient(135deg,var(--accent-bg),transparent); border:1px solid var(--accent-borda); border-radius:16px; padding:22px; margin-top:8px; animation:fadeUp .5s .1s ease forwards; opacity:0; }
-  .total-row { display:grid; grid-template-columns:1fr 1px 1fr 1px 1fr; text-align:center; }
-  .divider { background:var(--cinza-borda); }
-  .total-item { padding:0 14px; }
-  .total-item .tl { font-size:10px; color:var(--texto-suave); font-weight:600; letter-spacing:.5px; margin-bottom:6px; }
-  .total-item .tv { font-family:'Sora',sans-serif; font-weight:700; font-size:clamp(17px,3.5vw,24px); }
-  .nota { margin-top:18px; font-size:12px; color:var(--texto-suave); text-align:center; line-height:1.6; }
-
-  .clr-verde   { color:var(--verde)!important; }
-  .clr-azul    { color:var(--azul)!important; }
-  .clr-vermelho{ color:var(--vermelho)!important; }
-  .clr-amarelo { color:var(--amarelo)!important; }
-  .clr-branco  { color:var(--texto)!important; }
-
-  @media(max-width:520px){
-    /* ─── Corpo & container ─── */
-    body { padding: 14px 10px 48px; }
-    .container { max-width: 100%; }
-    header { margin-bottom: 18px; }
-    header h1 { font-size: clamp(20px, 6.5vw, 28px); }
-    header .label { font-size: 10px; letter-spacing: 3px; margin-bottom: 6px; }
-    header p { font-size: 11px; }
-
-    /* ─── Toggle ─── */
-    .toggle-wrap { padding: 4px; gap: 3px; margin-bottom: 14px; }
-    .toggle-btn { padding: 10px 5px; gap: 2px; }
-    .toggle-btn .tb-icon { font-size: 17px; }
-    .toggle-btn .tb-title { font-size: 12px; }
-    .toggle-btn .tb-sub { display: none; }
-
-    /* ─── Info box ─── */
-    .info-box { padding: 10px 12px; font-size: 11px; line-height: 1.5; }
-
-    /* ─── Card ─── */
-    .card { padding: 14px; border-radius: 12px; margin-bottom: 12px; }
-    .card-title { font-size: 10px; letter-spacing: 2px; margin-bottom: 12px; }
-
-    /* ─── Rows & fields full-width ─── */
-    .row { grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
-    .row.cols3 { grid-template-columns: 1fr; }
-    .field label { font-size: 12px; }
-    .field input, .field select {
-      padding: 13px 12px;
-      font-size: 16px; /* evita zoom no iOS */
-      border-radius: 8px;
-    }
-
-    /* ─── Cheque items ─── */
-    .cheque-item { padding: 12px; border-radius: 10px; margin-bottom: 8px; }
-    .cheque-row { grid-template-columns: 1fr; gap: 8px; }
-    .cheque-row .btn-remove { grid-column: 1; justify-self: end; width: 44px; height: 44px; }
-
-    /* ─── Botões ─── */
-    .btn-add { font-size: 12px; padding: 9px 13px; }
-    .btn-add-parcela { font-size: 13px; padding: 13px; }
-    .btn-calcular { padding: 16px; font-size: 16px; border-radius: 12px; margin-top: 2px; }
-    .btn-remove { min-width: 44px; min-height: 44px; }
-
-    /* ─── Tabela de parcelas → layout de cards ─── */
-    .parcelas-table, .parcelas-table tbody { display: block; }
-    .parcelas-table thead { display: none; }
-    .parcela-row {
-      display: grid !important;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 8px 10px;
-      background: var(--cinza);
-      border: 1px solid var(--cinza-borda);
-      border-radius: 11px;
-      padding: 10px 12px;
-      margin-bottom: 8px;
-    }
-    .parcela-row td {
-      padding: 0 !important;
-      display: block;
-    }
-    .parcela-row td:nth-child(2) { grid-column: 2 / 4; font-size: 11px; }
-    .parcela-row td:nth-child(3),
-    .parcela-row td:nth-child(4) { margin-top: 4px; }
-    .parcela-row td:last-child { justify-self: end; align-self: start; }
-    .parcela-badge { height: 34px; min-width: 46px; font-size: 13px; }
-    .parcela-resultado { height: 34px; font-size: 12px; padding: 0 10px; }
-
-    /* ─── Resultados antecipação ─── */
-    .resultado-cheque { padding: 14px; }
-    .res-header { margin-bottom: 10px; padding-bottom: 10px; }
-    .res-valor-original { font-size: 18px; }
-    .res-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .res-badge { font-size: 10px; padding: 3px 8px; }
-
-    /* ─── Totalizador ─── */
-    .total-row { grid-template-columns: 1fr; gap: 12px; }
-    .divider { display: none; }
-    .total-item { padding: 0; }
-    .totalizador { padding: 16px; border-radius: 14px; }
-    .nota { margin-top: 14px; font-size: 11px; }
-
-    /* ─── Tabela resultado venda → cards ─── */
-    .vres-resp-block table,
-    .vres-resp-block tbody { display: block !important; }
-    .vres-resp-block thead { display: none !important; }
-    .vres-resp-block tr {
-      display: grid !important;
-      grid-template-columns: auto 1fr auto;
-      align-items: center;
-      gap: 2px 8px;
-      border-bottom: 1px solid var(--cinza-borda) !important;
-      padding: 8px 4px !important;
-    }
-    .vres-resp-block tr:last-child { border-bottom: none !important; }
-    .vres-resp-block td {
-      display: block !important;
-      padding: 2px 0 !important;
-    }
-    .vres-resp-block td:nth-child(2) { grid-column: 2 / 4; }
-    .vres-resp-block td:nth-child(3) { display: none !important; }
-    .vres-resp-block td:last-child { text-align: right !important; font-size: 15px !important; }
-
-    /* ─── Rodapé do bloco resultado ─── */
-    .vres-resp-block .vres-footer {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      gap: 6px !important;
-      font-size: 12px !important;
-    }
-    .vres-resp-block .vres-footer > div:last-child { font-size: 16px !important; }
-  }
-
-  /* ─── BOTÃO IMPRIMIR ─── */
-  .btn-imprimir {
-    width: 100%; background: transparent;
-    border: 2px dashed var(--accent-borda); border-radius: 12px;
-    color: var(--accent); font-family: 'Sora', sans-serif;
-    font-size: 15px; font-weight: 600; padding: 14px;
-    cursor: pointer; transition: all .2s; margin-top: 18px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
-  .btn-imprimir:hover { border-color: var(--accent); background: var(--accent-bg); }
-
-  .btn-imprimir-mini {
-    background: transparent; border: 1px solid var(--cinza-borda);
-    border-radius: 6px; color: var(--texto-suave); font-size: 14px;
-    padding: 6px 10px; cursor: pointer; transition: all .2s;
-    font-family: 'Sora', sans-serif; line-height: 1;
-  }
-  .btn-imprimir-mini:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-
-  /* ─── TELA DE BLOQUEIO ─── */
-  .tela-bloqueio {
-    position: fixed; inset: 0; z-index: 9999;
-    background: var(--preto);
-    background-image:
-      radial-gradient(ellipse 60% 50% at 50% 30%, rgba(77,159,255,0.08), transparent 70%);
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-  }
-  .bloqueio-card {
-    width: 100%; max-width: 340px;
-    background: var(--cinza-escuro);
-    border: 1px solid var(--cinza-borda);
-    border-radius: 16px; padding: 32px 24px;
-    text-align: center;
-  }
-  .bloqueio-card .bloqueio-icon {
-    font-size: 40px; margin-bottom: 12px;
-  }
-  .bloqueio-card h2 {
-    font-family: 'Sora', sans-serif; font-weight: 700;
-    font-size: 18px; color: var(--texto); margin-bottom: 6px;
-  }
-  .bloqueio-card p {
-    font-size: 12px; color: var(--texto-suave); margin-bottom: 20px; line-height: 1.5;
-  }
-  .bloqueio-card .bloqueio-input {
-    width: 100%; text-align: center;
-    background: var(--cinza); border: 1px solid var(--cinza-borda); border-radius: 10px;
-    padding: 13px; color: var(--texto); font-family: 'DM Mono', monospace;
-    font-size: 18px; letter-spacing: 4px; text-transform: uppercase;
-    outline: none; margin-bottom: 14px; transition: border-color .2s;
-  }
-  .bloqueio-card .bloqueio-input:focus {
-    border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg);
-  }
-  .bloqueio-btn {
-    width: 100%; background: var(--accent); color: var(--preto);
-    border: none; border-radius: 10px; padding: 14px;
-    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700;
-    cursor: pointer; transition: all .2s;
-  }
-  .bloqueio-btn:hover { filter: brightness(.88); }
-  .bloqueio-btn:active { transform: translateY(1px); }
-  .bloqueio-erro {
-    color: var(--vermelho); font-size: 11px; margin-top: 10px; display: none;
-  }
-  .bloqueio-link {
-    margin-top: 16px; font-size: 11px; color: var(--texto-suave); opacity: .6;
-    cursor: pointer; background: none; border: none;
-    font-family: 'Sora', sans-serif; transition: opacity .2s;
-  }
-  .bloqueio-link:hover { opacity: 1; color: var(--accent); }
-
-  /* ─── RECIBO IMPRESSÃO ─── */
-  /* PDF gerado via jsPDF — sem dependência de @media print */
+}
 </style>
 </head>
 <body>
 
-<div id="telaBloqueio" class="tela-bloqueio">
-  <div class="bloqueio-card">
-    <div class="bloqueio-icon">🔐</div>
+<!-- ═══════════════════ TELA DE BLOQUEIO ═══════════════════ -->
+<div
+  id="telaBloqueio"
+  x-data="auth"
+  x-show="$store.app.bloqueado"
+  x-cloak
+  class="tela-bloqueio"
+>
+  <article class="bloqueio-card">
+    <div class="bloqueio-icone">&#128274;</div>
     <h2>Calculadora de Cheques</h2>
     <p>Digite o token de acesso enviado pelo administrador</p>
-    <input type="text" id="inputToken" class="bloqueio-input"
-           placeholder="EX: UF-9471-A1B2" maxlength="14"
-           autocomplete="off" autocorrect="off" autocapitalize="characters">
-    <button class="bloqueio-btn" onclick="entrarComToken()">Entrar</button>
-    <div class="bloqueio-erro" id="bloqueioErro"></div>
-    <div id="tokenAtivoInfo" style="display:none;margin-top:12px;font-size:11px;color:var(--texto-suave);font-family:'DM Mono',monospace;letter-spacing:1px"></div>
-    <footer id="versaoBloqueio" style="margin-top:18px;padding-top:14px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">v1.014</footer>
-  </div>
+    <input
+      type="text"
+      class="bloqueio-input"
+      x-model="token"
+      @keydown.enter.prevent="entrar()"
+      placeholder="EX: UF-9471-A1B2"
+      maxlength="14"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="characters"
+    >
+    <button
+      class="bloqueio-btn"
+      @click="entrar()"
+      :disabled="carregando"
+      x-text="carregando ? 'Validando...' : 'Entrar'"
+    >Entrar</button>
+    <div class="bloqueio-erro" x-show="erro" x-text="erro"></div>
+    <div x-show="$store.app.tokenAtivo" style="margin-top:10px;font-size:11px;color:var(--tinta-fraca);font-family:var(--fonte-valor);letter-spacing:1px" x-text="'Token ativo: \u2022\u2022\u2022\u2022' + $store.app.tokenAtivo"></div>
+    <footer class="bloqueio-footer" x-text="$store.app.versao"></footer>
+  </article>
 </div>
 
-<div class="container">
+<!-- ═══════════════════ APLICATIVO ═══════════════════ -->
+<main
+  x-data="calculadora"
+  x-show="!$store.app.bloqueado"
+  x-cloak
+  class="container"
+>
 
-  <header>
-    <div class="label" id="hLabel">Venda a Prazo com Juros Embutidos</div>
-    <h1>Calculadora de<br><em id="hEm">Acréscimo Financeiro</em></h1>
-    <p id="hSub">Informe o preço à vista e veja quanto cobrar em cada cheque</p>
+  <header class="cabecalho">
+    <div class="cabecalho__selo">
+      <span x-text="modo === 'venda' ? 'Venda a Prazo com Juros Embutidos' : 'Antecipação de Recebíveis'"></span>
+    </div>
+    <h1>Calculadora de<br><em x-text="modo === 'venda' ? 'Acréscimo Financeiro' : 'Desconto de Cheques'"></em></h1>
+    <p class="cabecalho__subtitulo" x-text="modo === 'venda' ? 'Informe o preço à vista e veja quanto cobrar em cada cheque' : 'Quanto você recebe ao antecipar seus cheques'"></p>
   </header>
 
-  <!-- TOGGLE -->
-  <div class="toggle-wrap">
-    <button class="toggle-btn ativo" id="btnV" onclick="setModo('venda')">
-      <span class="tb-icon">🛒</span>
-      <span class="tb-title">Venda a Prazo</span>
-      <span class="tb-sub">Vendo produto e quero embutir os juros</span>
+  <!-- SELO DUPLO (toggle) -->
+  <nav class="selo-duplo">
+    <button
+      class="selo-btn" :class="{ 'selo-btn--ativo': modo === 'venda' }"
+      @click="setModo('venda')"
+    >
+      <span class="selo-btn__icone">&#128722;</span>
+      <span class="selo-btn__titulo">Venda a Prazo</span>
+      <span class="selo-btn__dica">embutir juros nos cheques</span>
     </button>
-    <button class="toggle-btn" id="btnA" onclick="setModo('antecip')">
-      <span class="tb-icon">🏦</span>
-      <span class="tb-title">Antecipação</span>
-      <span class="tb-sub">Tenho cheques, quero dinheiro agora</span>
+    <button
+      class="selo-btn" :class="{ 'selo-btn--ativo': modo === 'antecip' }"
+      @click="setModo('antecip')"
+    >
+      <span class="selo-btn__icone">&#127974;</span>
+      <span class="selo-btn__titulo">Antecipação</span>
+      <span class="selo-btn__dica">dinheiro agora</span>
     </button>
-  </div>
+  </nav>
 
-  <div class="info-box" id="infoBox">
+  <!-- INFO BOX -->
+  <div class="info-box" x-show="modo === 'venda'">
     <strong>Venda a Prazo:</strong> Defina o preço à vista e a taxa de juros. A calculadora mostra o valor a escrever em cada cheque para que você receba o equivalente ao preço à vista.
   </div>
+  <div class="info-box" x-show="modo === 'antecip'">
+    <strong>Antecipação de Recebíveis:</strong> Você possui cheques a receber e quer o dinheiro hoje. O banco ou factoring desconta os juros e te repassa o valor líquido imediatamente.
+  </div>
 
-  <!-- ══ CONFIG GERAL ══ -->
-  <div class="card">
-    <div class="card-title">Configurações Gerais</div>
+  <!-- ══ CONFIGURAÇÕES ══ -->
+  <article class="canhoto">
+    <div class="canhoto__selo">Configurações Gerais</div>
 
-    <!-- Antecipação: tipo + taxa + tarifa -->
-    <div id="configAntecip" style="display:none">
-      <div class="field" style="margin-bottom:14px">
+    <!-- Config: Antecipação -->
+    <div x-show="modo === 'antecip'">
+      <div class="campo" style="margin-bottom:14px">
         <label>Tipo de Cálculo</label>
-        <select id="tipoCalc">
+        <select x-model="tipoCalc">
           <option value="simples">Juros Simples (Desconto Bancário)</option>
           <option value="composto">Juros Compostos</option>
         </select>
       </div>
-      <div class="row">
-        <div class="field">
+      <div class="grade grade--2">
+        <div class="campo">
           <label>Taxa de Juros (% a.m.)</label>
-          <input type="text" id="taxaMensal" inputmode="decimal" placeholder="Ex: 3,5">
+          <input type="text" x-model="taxaMensal" inputmode="decimal" placeholder="Ex: 3,5">
         </div>
-        <div class="field">
+        <div class="campo">
           <label>Tarifa por Cheque (R$)</label>
-          <input type="number" id="tarifa" placeholder="Ex: 8.00" step="0.01" min="0" value="0">
+          <input type="number" x-model="tarifa" placeholder="Ex: 8.00" step="0.01" min="0">
         </div>
       </div>
     </div>
 
-    <!-- Venda: valor à vista + data 1º cheque + taxa -->
-    <div id="configVenda">
-      <div class="row cols3">
-        <div class="field">
+    <!-- Config: Venda -->
+    <div x-show="modo === 'venda'">
+      <div class="grade grade--3">
+        <div class="campo">
           <label>Valor Total à Vista (R$)</label>
-          <input type="text" id="vValorVista" inputmode="decimal" placeholder="R$ 0,00" oninput="mascaraMoeda(this)" onblur="mascaraMoedaBlur(this)" onfocus="mascaraMoedaFocus(this)">
+          <input type="text"
+            @input="onMoneyInput($event, 'valorVistaCents', 'valorVistaDisplay')"
+            @focus="mascaraMoedaFocus($event.target)"
+            @blur="onMoneyBlur($event, 'valorVistaCents', 'valorVistaDisplay')"
+            inputmode="decimal"
+            placeholder="R$ 0,00">
         </div>
-        <div class="field">
+        <div class="campo">
           <label>Prazo do 1º Cheque (dias)</label>
-          <input type="number" id="vPrazo1" placeholder="Ex: 30" min="0" max="30" step="1">
+          <input type="number" x-model.number="prazo1" placeholder="Ex: 30" min="0" max="30">
         </div>
-        <div class="field">
+        <div class="campo">
           <label>Demais cheques</label>
-          <input type="text" value="A cada 30 dias" disabled style="opacity:.6;cursor:not-allowed">
+          <input type="text" value="A cada 30 dias" disabled>
         </div>
       </div>
-      <div class="row">
-        <div class="field">
+      <div class="grade grade--2">
+        <div class="campo">
           <label>Taxa de Juros (% a.m.)</label>
-          <input type="text" id="vTaxa" inputmode="decimal" placeholder="Ex: 3,5">
+          <input type="text" x-model="taxaVenda" inputmode="decimal" placeholder="Ex: 3,5">
         </div>
-        <div class="field">
+        <div class="campo">
           <label>Tipo de Cálculo</label>
-          <select id="vTipoCalc">
+          <select x-model="tipoCalcVenda">
             <option value="simples">Juros Simples</option>
             <option value="composto">Juros Compostos</option>
           </select>
         </div>
       </div>
     </div>
-  </div>
+  </article>
 
-  <!-- ══ SEÇÃO ANTECIPAÇÃO: cheques individuais ══ -->
-  <div id="secaoAntecip" style="display:none">
-    <div class="card">
-      <div class="cheques-header">
-        <div class="card-title" style="margin:0">Cheques a Antecipar</div>
-        <button class="btn-add" onclick="addChequeAntecip()">+ Adicionar</button>
+  <!-- ══ SEÇÃO: ANTECIPAÇÃO ══ -->
+  <section x-show="modo === 'antecip'" x-cloak>
+    <article class="canhoto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div class="canhoto__selo" style="margin:0">Cheques a Antecipar</div>
+        <button class="btn-adicionar" style="width:auto;margin:0;padding:8px 16px" @click="addCheque()">
+          <span style="font-size:14px">&#xFF0B;</span> Adicionar
+        </button>
       </div>
-      <div id="listaCheques"></div>
-    </div>
-    <button class="btn-calcular" onclick="calcularAntecip()">Calcular Desconto →</button>
-  </div>
 
-  <!-- ══ SEÇÃO VENDA A PRAZO: tabela de opções ══ -->
-  <div id="secaoVenda">
-    <div class="card">
-      <div class="card-title">Opções de Parcelamento</div>
-      <table class="parcelas-table">
-        <thead>
-          <tr>
-            <th>Parcelas</th>
-            <th>Vencimentos</th>
-            <th>Valor de cada cheque</th>
-            <th>Total nos cheques</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tabelaParcelas"></tbody>
-      </table>
-      <button class="btn-add-parcela" onclick="addLinhaParcela()">
-        <span style="font-size:16px">＋</span> Adicionar opção de parcelamento
+      <template x-for="(ch, i) in cheques" :key="ch.id">
+        <div class="cheque-item">
+          <div class="cheque-item__header">
+            <div class="cheque-item__num" x-text="'CHEQUE #' + String(ch.id).padStart(2,'0')"></div>
+            <button class="btn-remover" @click="removerCheque(i)" title="Remover">&times;</button>
+          </div>
+          <div class="grade grade--2" style="margin-bottom:10px">
+            <div class="campo">
+              <label>Data Base (hoje)</label>
+              <input type="date" x-model="ch.dataBase">
+            </div>
+            <div class="campo">
+              <label>Data Vencimento</label>
+              <input type="date" x-model="ch.dataVenc">
+            </div>
+          </div>
+          <div class="cheque-item__grade">
+            <div class="campo">
+              <label>Valor do Cheque (R$)</label>
+              <input type="text"
+                @input="onMoneyInputCheque($event, ch)"
+                @focus="mascaraMoedaFocus($event.target)"
+                @blur="onMoneyBlurCheque($event, ch)"
+                inputmode="decimal"
+                placeholder="R$ 3.000,00">
+            </div>
+            <div class="campo">
+              <label>Número do Cheque</label>
+              <input type="text" x-model="ch.numero" inputmode="numeric" placeholder="Ex: 012012" maxlength="12" @input="ch.numero = ch.numero.replace(/\D/g,'')">
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div x-show="!cheques.length" style="text-align:center;padding:16px;color:var(--tinta-fraca);font-size:13px">
+        Nenhum cheque adicionado
+      </div>
+    </article>
+
+    <button class="btn-acao" @click="calcular()">Calcular Desconto &rarr;</button>
+  </section>
+
+  <!-- ══ SEÇÃO: VENDA A PRAZO ══ -->
+  <section x-show="modo === 'venda'" x-cloak>
+    <article class="canhoto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="canhoto__selo" style="margin:0">Opções de Parcelamento</div>
+      </div>
+
+      <template x-for="(p, i) in parcelas" :key="i">
+        <div class="parcela-linha">
+          <div>
+            <span class="parcela-badge" x-text="p.n + '×'"></span>
+          </div>
+          <div class="parcela-vencimentos" x-html="p.vencimentos || 'calculado automaticamente'"></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="parcela-valor" :class="{ 'parcela-valor--ok': p.cada }" x-text="p.cada || '—'"></div>
+            <div class="parcela-valor" :class="{ 'parcela-valor--ok': p.total }" x-text="p.total || '—'"></div>
+            <button
+              class="btn-remover"
+              @click="removerParcela(i)"
+              style="width:34px;height:34px;font-size:15px"
+              :style="parcelas.length <= 1 ? 'visibility:hidden' : ''"
+              title="Remover"
+            >&times;</button>
+          </div>
+        </div>
+      </template>
+
+      <button class="btn-adicionar" @click="addParcela()">
+        <span style="font-size:15px">&#xFF0B;</span> Adicionar opção de parcelamento
       </button>
-    </div>
-    <button class="btn-calcular" onclick="calcularVenda()">Calcular Acréscimos →</button>
-  </div>
+    </article>
 
-  <!-- ══ RESULTADOS ANTECIPAÇÃO ══ -->
-  <div id="resultadosAntecip">
-    <div class="card" style="margin-top:20px">
-      <div class="card-title">Resultado por Cheque</div>
-      <div id="resultadosCheques"></div>
-    </div>
-    <div class="totalizador">
-      <div class="total-row">
-        <div class="total-item"><div class="tl">VALOR DOS CHEQUES</div><div class="tv clr-branco" id="atvBruto">—</div></div>
-        <div class="divider"></div>
-        <div class="total-item"><div class="tl">TOTAL DESCONTADO</div><div class="tv clr-vermelho" id="atvDesc">—</div></div>
-        <div class="divider"></div>
-        <div class="total-item"><div class="tl">VOCÊ RECEBE HOJE</div><div class="tv clr-verde" id="atvLiq">—</div></div>
+    <button class="btn-acao" @click="calcular()">Calcular Acréscimos &rarr;</button>
+  </section>
+
+  <!-- ══ RESULTADOS ══ -->
+  <section x-show="mostrandoResultados" x-cloak id="resultados">
+
+    <!-- Resultados: Antecipação -->
+    <template x-if="modo === 'antecip'">
+      <div>
+        <article class="canhoto">
+          <div class="canhoto__selo">Resultado por Cheque</div>
+
+          <template x-for="(r, idx) in resultados" :key="idx">
+            <div class="res-cheque" :style="{ animationDelay: r.delay + 's' }">
+              <div class="res-cheque__topo">
+                <div>
+                  <div class="res-cheque__rotulo" x-text="'Cheque ' + r.num + ' — ' + r.dias + ' dias'"></div>
+                  <div class="res-cheque__valor">R$ <span x-text="r.valor"></span></div>
+                </div>
+                <div class="res-cheque__data" x-text="r.dataVenc"></div>
+              </div>
+              <div class="res-cheque__grade">
+                <div>
+                  <div class="res-cheque__campo-label">Desconto</div>
+                  <div class="res-cheque__campo-num tinta-vermelha">&minus; R$ <span x-text="r.desconto"></span></div>
+                </div>
+                <div>
+                  <div class="res-cheque__campo-label">Tarifa</div>
+                  <div class="res-cheque__campo-num tinta-dourada">&minus; R$ <span x-text="r.tarifa"></span></div>
+                </div>
+                <div>
+                  <div class="res-cheque__campo-label">Taxa efetiva</div>
+                  <div class="res-cheque__campo-num tinta-dourada" x-text="r.taxaEf + '%'"></div>
+                </div>
+                <div class="res-cheque__recebe">
+                  <div class="res-cheque__campo-label">Você recebe hoje</div>
+                  <div class="res-cheque__campo-num tinta-verde" style="font-size:18px">R$ <span x-text="r.liquido"></span></div>
+                </div>
+              </div>
+            </div>
+          </template>
+        </article>
+
+        <article class="canhoto" x-show="totalizador">
+          <div class="totalizador">
+            <div class="totalizador__item">
+              <div class="totalizador__label">VALOR DOS CHEQUES</div>
+              <div class="totalizador__valor tinta-azul" x-text="totalizador ? totalizador.bruto : '—'"></div>
+            </div>
+            <div class="totalizador__div"></div>
+            <div class="totalizador__item">
+              <div class="totalizador__label">TOTAL DESCONTADO</div>
+              <div class="totalizador__valor tinta-vermelha" x-text="totalizador ? totalizador.desc : '—'"></div>
+            </div>
+            <div class="totalizador__div"></div>
+            <div class="totalizador__item">
+              <div class="totalizador__label">VOCÊ RECEBE HOJE</div>
+              <div class="totalizador__valor tinta-verde" x-text="totalizador ? totalizador.liq : '—'"></div>
+            </div>
+          </div>
+          <div class="totalizador__nota" x-show="totalizador" x-html="totalizador.notaHtml"></div>
+        </article>
+
+        <button class="btn-recibo" @click="imprimirReciboAntecip()">&#128424; Imprimir Recibo</button>
       </div>
-      <div class="nota" id="atvNota"></div>
-    </div>
-  </div>
+    </template>
 
-  <!-- ══ RESULTADOS VENDA ══ -->
-  <div id="resultadosVenda">
-    <div class="card" style="margin-top:20px">
-      <div class="card-title" id="vResCardTitle">Tabela de Parcelamento</div>
-      <div id="vResConteudo"></div>
-    </div>
-    <div class="totalizador" id="vTotalizador" style="display:none">
-      <div class="nota" id="vNotaFinal"></div>
-    </div>
-  </div>
+    <!-- Resultados: Venda a Prazo -->
+    <template x-if="modo === 'venda'">
+      <div>
+        <article class="canhoto">
+          <div class="canhoto__selo">Tabela de Parcelamento</div>
 
-  <footer id="versaoRodape" style="text-align:center;margin-top:32px;padding-top:18px;border-top:1px solid var(--cinza-borda);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--texto-suave);opacity:.55">
-    v1.014
-  </footer>
+          <template x-for="(r, idx) in resultados" :key="idx">
+            <div class="resultado-bloco">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div class="res-parcelas" x-text="r.numParc + '× CHEQUE' + (r.numParc > 1 ? 'S' : '')"></div>
+                  <div class="res-vista">À vista: <strong>R$ <span x-text="r.vista"></span></strong></div>
+                </div>
+                <button class="btn-recibo-mini" @click="imprimirReciboVenda(idx)" title="Imprimir este plano">&#128424;</button>
+              </div>
+              <table class="res-tabela">
+                <thead>
+                  <tr>
+                    <th>Cheque</th>
+                    <th>Vencimento</th>
+                    <th>Dias</th>
+                    <th>Valor do cheque</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template x-for="c in r.cheques" :key="c.k">
+                    <tr>
+                      <td x-text="'#' + String(c.k).padStart(2,'0')" style="color:var(--verde-cedula);font-weight:600"></td>
+                      <td x-text="c.dv" style="font-size:12px;color:var(--tinta-preta)"></td>
+                      <td x-text="c.dias + 'd'" style="font-size:12px;color:var(--tinta-preta)"></td>
+                      <td x-text="'R$ ' + c.vc" style="font-weight:600"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <div class="res-footer">
+                <div class="res-footer__acrescimo">
+                  Acréscimo: <span x-text="'+R$ ' + fmt(r.acrescimo) + ' (' + r.pct + '%)'"></span>
+                </div>
+                <div class="res-footer__total">Total: R$ <span x-text="r.total"></span></div>
+              </div>
+            </div>
+          </template>
+        </article>
+      </div>
+    </template>
 
-</div><!-- /container -->
+  </section>
 
-<button id="btnImprimirRecibo" class="btn-imprimir" style="display:none" onclick="imprimirReciboAntecip()">
-  🖨️ Imprimir Recibo
-</button>
+  <footer class="rodape" x-text="$store.app.versao"></footer>
+
+</main>
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
 <script>
-  /* ═══════════════════════════════════════
-     SISTEMA DE TOKEN — backend Apps Script + Sheets
-     ═══════════════════════════════════════ */
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSFZGd7U3FOUIrvfCi-1azFSZTzCG6SW6pGZb37bG7Es_IYHmb3_weC5-FziEmpmAP-g/exec';
-  const LS_AUTH = 'calc_auth';
+/* ═══════════════════════════════════════
+   CONSTANTES
+   ═══════════════════════════════════════ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSFZGd7U3FOUIrvfCi-1azFSZTzCG6SW6pGZb37bG7Es_IYHmb3_weC5-FziEmpmAP-g/exec';
+const LS_AUTH = 'calc_auth';
 
-  function hashToken(str) {
-    let h = 0x5F3A;
-    for (let i = 0; i < str.length; i++) {
-      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+/* ═══════════════════════════════════════
+   UTILITÁRIOS
+   ═══════════════════════════════════════ */
+function hashToken(str) {
+  let h = 0x5F3A;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+function gerarDeviceId() {
+  const info = [
+    navigator.hardwareConcurrency || '',
+    navigator.deviceMemory || '',
+    screen.width + 'x' + screen.height,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  ].join('|');
+  return hashToken(info);
+}
+
+function verificarAutenticacao() {
+  const auth = localStorage.getItem(LS_AUTH);
+  if (!auth) return false;
+  try {
+    const dados = JSON.parse(auth);
+    if (!dados.token || !dados.deviceId) return false;
+    if (dados.deviceId !== gerarDeviceId()) return false;
+    return true;
+  } catch(e) { return false; }
+}
+
+async function consumirToken(token) {
+  const deviceId = gerarDeviceId();
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action: 'redeem',
+        token,
+        deviceId,
+        userAgent: navigator.userAgent
+      })
+    });
+    const data = await res.json();
+    if (data.status === 'ok') {
+      localStorage.setItem(LS_AUTH, JSON.stringify({ token, deviceId }));
     }
-    return (h >>> 0).toString(16).padStart(8, '0');
+    return data.status || 'erro';
+  } catch (e) {
+    return 'erro_rede';
   }
+}
 
-  function gerarDeviceId() {
-    const info = [
-      navigator.hardwareConcurrency || '',
-      navigator.deviceMemory || '',
-      screen.width + 'x' + screen.height,
-      navigator.language,
-      Intl.DateTimeFormat().resolvedOptions().timeZone
-    ].join('|');
-    return hashToken(info);
-  }
+function fmt(v) {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
-  function verificarAutenticacao() {
-    const auth = localStorage.getItem(LS_AUTH);
-    if (!auth) return false;
-    try {
-      const dados = JSON.parse(auth);
-      if (!dados.token || !dados.deviceId) return false;
-      if (dados.deviceId !== gerarDeviceId()) return false;
-      return true;
-    } catch(e) { return false; }
-  }
+function parseDecimalBR(s) {
+  s = String(s).trim();
+  if (!s) return NaN;
+  if (s.includes(',')) return parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  return parseFloat(s);
+}
 
-  async function consumirToken(token) {
-    const deviceId = gerarDeviceId();
-    try {
-      const res = await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: 'redeem',
-          token,
-          deviceId,
-          userAgent: navigator.userAgent
-        })
-      });
-      const data = await res.json();
-      if (data.status === 'ok') {
-        localStorage.setItem(LS_AUTH, JSON.stringify({ token, deviceId }));
-      }
-      return data.status || 'erro';
-    } catch (e) {
-      return 'erro_rede';
+function fmtData(s) {
+  const [y, m, d] = s.split('-');
+  return d + '/' + m + '/' + y;
+}
+
+function fmtDataObj(d) {
+  return String(d.getDate()).padStart(2, '0') + '/' +
+         String(d.getMonth() + 1).padStart(2, '0') + '/' +
+         d.getFullYear();
+}
+
+function versaoCompleta() {
+  try {
+    const auth = JSON.parse(localStorage.getItem(LS_AUTH));
+    if (auth && auth.token) {
+      return 'v1.014 (' + auth.token.slice(-4) + ')';
     }
-  }
+  } catch(e) {}
+  return 'v1.014';
+}
 
-  async function entrarComToken() {
-    const input = document.getElementById('inputToken');
-    const erro = document.getElementById('bloqueioErro');
-    const btn = document.querySelector('.bloqueio-btn');
-    const token = input.value.trim().toUpperCase();
+/* ═══════════════════════════════════════
+   MÁSCARA DE MOEDA
+   ═══════════════════════════════════════ */
+function mascaraMoeda(input) {
+  let raw = input.value.replace(/\D/g, '');
+  if (raw === '') { input.dataset.raw = '0'; input.value = ''; return; }
+  input.dataset.raw = raw;
+  const cents = parseInt(raw);
+  const reais = Math.floor(cents / 100);
+  const dec = (cents % 100).toString().padStart(2, '0');
+  const intFormat = reais.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  input.value = intFormat + ',' + dec;
+}
 
-    if (!token) {
-      erro.textContent = 'Digite o token de acesso.';
-      erro.style.display = 'block';
-      return;
-    }
+function mascaraMoedaBlur(input) {
+  if (input.value === '' || input.value === 'R$ 0,00') return;
+  mascaraMoeda(input);
+}
 
-    erro.style.display = 'none';
-    const labelOriginal = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Validando...';
+function mascaraMoedaFocus(input) {
+  const raw = input.dataset.raw || '0';
+  const cents = parseInt(raw);
+  if (cents === 0) { input.value = ''; return; }
+  input.value = (cents / 100).toFixed(2).replace('.', ',');
+}
 
-    const status = await consumirToken(token);
+/* ═══════════════════════════════════════
+   VIGILÂNCIA DE TOKEN (background)
+   ═══════════════════════════════════════ */
+let vigilanciaTokenId = null;
+const VIGILANCIA_INTERVALO_MS = 30000;
 
-    btn.disabled = false;
-    btn.textContent = labelOriginal;
-
-    if (status === 'ok') {
-      mostrarApp();
-      return;
-    }
-
-    const mensagens = {
-      invalido:   'Token inválido. Verifique e tente novamente.',
-      revogado:   'Este token foi revogado. Procure o administrador.',
-      usado:      'Este token já foi utilizado em outro dispositivo.',
-      erro_rede:  'Sem conexão. Verifique sua internet e tente novamente.'
-    };
-    erro.textContent = mensagens[status] || 'Erro ao validar o token. Tente novamente.';
-    erro.style.display = 'block';
-  }
-
-  function versaoCompleta() {
+function iniciarVigilanciaToken() {
+  if (vigilanciaTokenId !== null) return;
+  vigilanciaTokenId = setInterval(async () => {
+    if (!verificarAutenticacao()) { pararVigilanciaToken(); return; }
     try {
       const auth = JSON.parse(localStorage.getItem(LS_AUTH));
-      if (auth && auth.token) {
-        const ultimos = auth.token.slice(-4);
-        return 'v1.014 (' + ultimos + ')';
-      }
-    } catch(e) {}
-    return 'v1.014';
+      const status = await consumirToken(auth.token);
+      if (status === 'revogado' || status === 'usado') logout();
+    } catch(e) { /* offline — ignora */ }
+  }, VIGILANCIA_INTERVALO_MS);
+}
+
+function pararVigilanciaToken() {
+  if (vigilanciaTokenId !== null) {
+    clearInterval(vigilanciaTokenId);
+    vigilanciaTokenId = null;
   }
+}
 
-  function atualizarVersoes() {
-    const v = versaoCompleta();
-    const rodape = document.getElementById('versaoRodape');
-    const bloqueio = document.getElementById('versaoBloqueio');
-    const tokenInfo = document.getElementById('tokenAtivoInfo');
-
-    if (rodape) rodape.textContent = v;
-    if (bloqueio) bloqueio.textContent = v;
-
-    if (tokenInfo) {
-      const auth = verificarAutenticacao();
-      if (auth) {
-        try {
-          const dados = JSON.parse(localStorage.getItem(LS_AUTH));
-          if (dados && dados.token) {
-            const ultimos = dados.token.slice(-4);
-            tokenInfo.textContent = 'Token ativo: \u2022\u2022\u2022\u2022' + ultimos;
-            tokenInfo.style.display = '';
-          }
-        } catch(e) { tokenInfo.style.display = 'none'; }
-      } else {
-        tokenInfo.style.display = 'none';
-      }
+function logout() {
+  pararVigilanciaToken();
+  localStorage.removeItem(LS_AUTH);
+  if (window.Alpine) {
+    const store = Alpine.store('app');
+    if (store) {
+      store.bloqueado = true;
+      store.tokenAtivo = null;
     }
   }
+}
 
-  function mostrarApp() {
-    document.getElementById('telaBloqueio').style.display = 'none';
-    atualizarVersoes();
-    iniciarVigilanciaToken();
+/* ═══════════════════════════════════════
+   PDF — jsPDF (funções standalone)
+   ═══════════════════════════════════════ */
+function abrirPDF(doc, filename) {
+  try {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    if (!win) doc.save(filename);
+  } catch (e) {
+    doc.save(filename);
+  }
+}
+
+function sanePDF(s) {
+  return String(s).replace(/[‐-―−]/g, '-');
+}
+
+function gerarPDFAntecip(dados) {
+  const { jsPDF } = window.jspdf;
+  const W = 75, H = 175, M = 3;
+  const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
+  const cx = W / 2, left = M, right = W - M;
+  let y = M + 2;
+
+  function checkPage(needed) {
+    if (y + needed > H - M) { doc.addPage(); y = M + 2; }
+  }
+  function divider(gray) {
+    doc.setDrawColor(gray !== undefined ? gray : 0);
+    doc.setLineWidth(0.2);
+    doc.line(left, y, right, y);
   }
 
-  /* ─── Vigilância em background: derruba sessão se token for revogado/usado ─── */
-  let vigilanciaTokenId = null;
-  const VIGILANCIA_INTERVALO_MS = 30000;
+  doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+  doc.text('RECIBO DE ANTECIPACAO', cx, y, { align: 'center' });
+  y += 4.5;
 
-  function iniciarVigilanciaToken() {
-    if (vigilanciaTokenId !== null) return;
-    vigilanciaTokenId = setInterval(async () => {
-      if (!verificarAutenticacao()) { pararVigilanciaToken(); return; }
+  doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+  doc.text('Gerado em ' + dados.data, cx, y, { align: 'center' });
+  y += 3.2;
+
+  doc.text('Taxa: ' + dados.taxa + '% a.m. (' + dados.tipoCalc + ')', cx, y, { align: 'center' });
+  y += 2.8;
+  doc.text('Tarifa: R$ ' + fmt(parseFloat(dados.tarifa) || 0) + ' por cheque', cx, y, { align: 'center' });
+  y += 3.5;
+
+  divider(); y += 3;
+
+  dados.itens.forEach(ch => {
+    checkPage(11);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
+    const labelCheque = ch.numero ? 'CHEQUE N ' + ch.numero : 'CHEQUE';
+    doc.text(labelCheque, left, y);
+    doc.text('R$ ' + fmt(ch.valor), right, y, { align: 'right' });
+    y += 3;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text('Data Base', left, y);
+    doc.text(fmtData(ch.dataBase), right, y, { align: 'right' });
+    y += 2.5;
+
+    doc.text('Vencimento', left, y);
+    doc.text(fmtData(ch.dataVenc) + ' (' + ch.dias + 'd)', right, y, { align: 'right' });
+    y += 2.5;
+
+    divider(220); y += 2.5;
+  });
+
+  y += 0.3; divider(); y += 3.4;
+
+  function resumo(label, valor) {
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text(label, left, y);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+    doc.text(sanePDF(valor), right, y, { align: 'right' });
+    y += 3.4;
+  }
+
+  resumo('TOTAL DOS CHEQUES', dados.totalBruto);
+  resumo('TOTAL DESCONTADO', dados.totalDesc);
+  resumo('VOCE RECEBE HOJE', dados.totalLiq);
+
+  y += 0.3; divider(); y += 3.5;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
+  doc.text('Calculadora de Cheques Pre-datados', cx, y, { align: 'center' });
+  y += 2.5;
+  doc.text(versaoCompleta(), cx, y, { align: 'center' });
+
+  abrirPDF(doc, 'recibo-antecipacao.pdf');
+}
+
+function gerarPDFVenda(dados) {
+  const { jsPDF } = window.jspdf;
+  const W = 75, H = 175, M = 3;
+  const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
+  const cx = W / 2, left = M, right = W - M;
+  let y = M + 2;
+
+  function checkPage(needed) {
+    if (y + needed > H - M) { doc.addPage(); y = M + 2; }
+  }
+  function divider(gray) {
+    doc.setDrawColor(gray !== undefined ? gray : 0);
+    doc.setLineWidth(0.2);
+    doc.line(left, y, right, y);
+  }
+
+  doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+  doc.text('RECIBO - VENDA A PRAZO', cx, y, { align: 'center' });
+  y += 4.5;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+  doc.text('Gerado em ' + dados.data, cx, y, { align: 'center' });
+  y += 4;
+
+  doc.text('VALOR A VISTA', left, y);
+  doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+  doc.text('R$ ' + fmt(dados.vista), right, y, { align: 'right' });
+  y += 3.5;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+  doc.text('Taxa: ' + (dados.taxa || '-') + '% a.m. (' + dados.tipoCalc + ')', cx, y, { align: 'center' });
+  y += 3.5;
+
+  divider(); y += 3;
+
+  doc.setFont('courier', 'bold'); doc.setFontSize(7.5); doc.setTextColor(85);
+  doc.text(dados.numParc + 'x CHEQUE' + (dados.numParc > 1 ? 'S' : '') + ' - a cada 30 dias', cx, y, { align: 'center' });
+  y += 3.5;
+
+  dados.cheques.forEach(c => {
+    checkPage(8);
+    doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
+    doc.text('#' + String(c.k).padStart(2, '0'), left, y);
+    doc.text('R$ ' + fmt(c.vc), right, y, { align: 'right' });
+    y += 3;
+
+    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+    doc.text('Venc: ' + fmtDataObj(c.dv), left, y);
+    doc.text(c.dias + ' dias', right, y, { align: 'right' });
+    y += 2.5;
+
+    divider(220); y += 2.5;
+  });
+
+  y += 0.3; divider(); y += 3.4;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+  doc.text('TOTAL NOS CHEQUES', left, y);
+  doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+  doc.text('R$ ' + fmt(dados.total), right, y, { align: 'right' });
+  y += 3.4;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
+  doc.text('ACRESCIMO', left, y);
+  doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
+  doc.text('+R$ ' + fmt(dados.acrescimo) + ' (' + dados.pct + '%)', right, y, { align: 'right' });
+  y += 3.4;
+
+  y += 0.3; divider(); y += 3.5;
+
+  doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
+  doc.text('Calculadora de Cheques Pre-datados', cx, y, { align: 'center' });
+  y += 2.5;
+  doc.text(versaoCompleta(), cx, y, { align: 'center' });
+
+  abrirPDF(doc, 'recibo-venda-a-prazo.pdf');
+}
+
+/* ═══════════════════════════════════════
+   ALPINE: STORE & COMPONENTS
+   ═══════════════════════════════════════ */
+document.addEventListener('alpine:init', () => {
+
+  /* ─── Store global ─── */
+  Alpine.store('app', {
+    bloqueado: !verificarAutenticacao(),
+
+    get tokenAtivo() {
       try {
         const auth = JSON.parse(localStorage.getItem(LS_AUTH));
-        const status = await consumirToken(auth.token);
-        if (status === 'revogado' || status === 'usado') logout();
-      } catch(e) { /* offline ou parse — ignora silenciosamente */ }
-    }, VIGILANCIA_INTERVALO_MS);
-  }
+        return auth && auth.token ? auth.token.slice(-4) : null;
+      } catch(e) { return null; }
+    },
 
-  function pararVigilanciaToken() {
-    if (vigilanciaTokenId !== null) {
-      clearInterval(vigilanciaTokenId);
-      vigilanciaTokenId = null;
+    get versao() {
+      return versaoCompleta();
     }
-  }
+  });
 
-  /* ═══════════════════════════════════════ */
+  /* ─── Auth ─── */
+  Alpine.data('auth', () => ({
+    token: '',
+    erro: '',
+    carregando: false,
 
-  let modo = 'venda';
-  let contadorCheque = 0;
-  let numLinhasParcela = 0;
+    async entrar() {
+      const value = this.token.trim().toUpperCase();
+      if (!value) {
+        this.erro = 'Digite o token de acesso.';
+        return;
+      }
 
-  /* ─── TOGGLE MODO ─── */
-  function setModo(m) {
-    modo = m;
-    document.getElementById('resultadosAntecip').style.display = 'none';
-    document.getElementById('resultadosVenda').style.display   = 'none';
-    document.getElementById('btnImprimirRecibo').style.display = 'none';
+      this.erro = '';
+      this.carregando = true;
 
-    if (m === 'antecip') {
-      document.body.classList.add('modo-antecip');
-      document.getElementById('btnA').classList.add('ativo');
-      document.getElementById('btnV').classList.remove('ativo');
-      document.getElementById('hLabel').textContent = 'Antecipação de Recebíveis';
-      document.getElementById('hEm').textContent    = 'Desconto de Cheques';
-      document.getElementById('hSub').textContent   = 'Quanto você recebe ao antecipar seus cheques';
-      document.getElementById('infoBox').innerHTML  = '<strong>Antecipação de Recebíveis:</strong> Você possui cheques a receber e quer o dinheiro hoje. O banco ou factoring desconta os juros e te repassa o valor líquido imediatamente.';
-      document.getElementById('configAntecip').style.display = '';
-      document.getElementById('configVenda').style.display   = 'none';
-      document.getElementById('secaoAntecip').style.display  = '';
-      document.getElementById('secaoVenda').style.display    = 'none';
-      if (!document.querySelectorAll('#listaCheques .cheque-item').length) addChequeAntecip();
-    } else {
-      document.body.classList.remove('modo-antecip');
-      document.getElementById('btnV').classList.add('ativo');
-      document.getElementById('btnA').classList.remove('ativo');
-      document.getElementById('hLabel').textContent = 'Venda a Prazo com Juros Embutidos';
-      document.getElementById('hEm').textContent    = 'Acréscimo Financeiro';
-      document.getElementById('hSub').textContent   = 'Informe o preço à vista e veja quanto cobrar em cada cheque';
-      document.getElementById('infoBox').innerHTML  = '<strong>Venda a Prazo:</strong> Defina o preço à vista e a taxa de juros. A calculadora mostra o valor a escrever em cada cheque para que você receba o equivalente ao preço à vista.';
-      document.getElementById('configAntecip').style.display = 'none';
-      document.getElementById('configVenda').style.display   = '';
-      document.getElementById('secaoAntecip').style.display  = 'none';
-      document.getElementById('secaoVenda').style.display    = '';
-      if (numLinhasParcela === 0) iniciarLinhasParcela();
+      const status = await consumirToken(value);
+
+      this.carregando = false;
+
+      if (status === 'ok') {
+        const store = Alpine.store('app');
+        store.bloqueado = false;
+        iniciarVigilanciaToken();
+        return;
+      }
+
+      const msgs = {
+        invalido:   'Token inválido. Verifique e tente novamente.',
+        revogado:   'Este token foi revogado. Procure o administrador.',
+        usado:      'Este token já foi utilizado em outro dispositivo.',
+        erro_rede:  'Sem conexão. Verifique sua internet.'
+      };
+      this.erro = msgs[status] || 'Erro ao validar o token.';
     }
-  }
+  }));
 
-  /* ─── ANTECIPAÇÃO: cheques livres ─── */
-  function addChequeAntecip() {
-    contadorCheque++;
-    const lista = document.getElementById('listaCheques');
-    const div = document.createElement('div');
-    div.className = 'cheque-item';
-    div.id = 'cheque-' + contadorCheque;
+  /* ─── Calculadora ─── */
+  Alpine.data('calculadora', () => ({
+    modo: 'venda',
 
-    const hoje = new Date().toISOString().split('T')[0];
-    const prazos = [30,60,90];
-    const sug = prazos[contadorCheque - 1] || 30;
-    const d = new Date(hoje + 'T12:00:00');
-    d.setDate(d.getDate() + sug);
-    const dataSug = d.toISOString().split('T')[0];
+    /* ----- Antecip config ----- */
+    taxaMensal: '3,5',
+    tipoCalc: 'simples',
+    tarifa: '0',
+    cheques: [],
 
-    div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div class="cheque-num" style="margin:0">CHEQUE #${String(contadorCheque).padStart(2,'0')}</div>
-        <button class="btn-remove" style="width:32px;height:32px;font-size:16px;min-width:32px;min-height:32px" onclick="removerCheque(${contadorCheque})" title="Remover">×</button>
-      </div>
-      <div class="row">
-        <div class="field">
-          <label>Data Base (hoje)</label>
-          <input type="date" class="data-base-cheque" value="${hoje}">
-        </div>
-        <div class="field">
-          <label>Data Vencimento (para)</label>
-          <input type="date" class="data-cheque" value="${dataSug}">
-        </div>
-      </div>
-      <div class="row" style="margin-top:14px">
-        <div class="field">
-          <label>Valor do Cheque (R$)</label>
-          <input type="text" class="valor-cheque" inputmode="decimal" placeholder="R$ 3.000,00"
-                 oninput="mascaraMoeda(this)" onblur="mascaraMoedaBlur(this)" onfocus="mascaraMoedaFocus(this)">
-        </div>
-        <div class="field">
-          <label>Número do Cheque</label>
-          <input type="text" class="numero-cheque" inputmode="numeric" pattern="[0-9]*" placeholder="Ex: 012012" maxlength="12" oninput="this.value=this.value.replace(/\D/g,'')">
-        </div>
-      </div>`;
-    lista.appendChild(div);
-  }
+    /* ----- Venda config ----- */
+    valorVistaCents: 0,
+    valorVistaDisplay: '',
+    prazo1: 30,
+    taxaVenda: '3,5',
+    tipoCalcVenda: 'simples',
+    parcelas: [{ n: 1 }, { n: 2 }, { n: 3 }],
 
-  function removerCheque(id) {
-    const el = document.getElementById('cheque-' + id);
-    if (el) el.remove();
-  }
+    /* ----- Results ----- */
+    resultados: [],
+    totalizador: null,
+    mostrandoResultados: false,
 
-  function calcularAntecip() {
-    const taxaMensal = parseDecimalBR(document.getElementById('taxaMensal').value);
-    const tipoCalc   = document.getElementById('tipoCalc').value;
-    const tarifa     = parseFloat(document.getElementById('tarifa').value) || 0;
+    /* --- Init --- */
+    async init() {
+      // Verificar token com servidor (se já autenticado)
+      if (verificarAutenticacao()) {
+        try {
+          const auth = JSON.parse(localStorage.getItem(LS_AUTH));
+          const status = await consumirToken(auth.token);
+          if (status === 'revogado' || status === 'usado') {
+            logout();
+          } else {
+            iniciarVigilanciaToken();
+          }
+        } catch(e) { /* offline — mantém acesso local */ }
+      }
+    },
 
-    if (isNaN(taxaMensal) || taxaMensal <= 0)  { alert('Informe a taxa de juros.'); return; }
+    /* ----- Money mask helpers ----- */
+    onMoneyInput(e, centsProp, displayProp) {
+      mascaraMoeda(e.target);
+      this[centsProp] = parseInt(e.target.dataset.raw || '0');
+      this[displayProp] = e.target.value;
+    },
+    onMoneyBlur(e, centsProp, displayProp) {
+      mascaraMoedaBlur(e.target);
+      this[centsProp] = parseInt(e.target.dataset.raw || '0');
+      this[displayProp] = e.target.value;
+    },
+    mascaraMoedaFocus,
 
-    const items = document.querySelectorAll('#listaCheques .cheque-item');
-    if (!items.length) { alert('Adicione ao menos um cheque.'); return; }
+    onMoneyInputCheque(e, cheque) {
+      mascaraMoeda(e.target);
+      cheque.valorCents = parseInt(e.target.dataset.raw || '0');
+      cheque.valorDisplay = e.target.value;
+    },
+    onMoneyBlurCheque(e, cheque) {
+      mascaraMoedaBlur(e.target);
+      cheque.valorCents = parseInt(e.target.dataset.raw || '0');
+      cheque.valorDisplay = e.target.value;
+    },
 
-    const taxaDiaria = taxaMensal / 30 / 100;
-    const resultDiv = document.getElementById('resultadosCheques');
-    resultDiv.innerHTML = '';
+    /* ----- Toggle modo ----- */
+    setModo(m) {
+      this.modo = m;
+      this.mostrandoResultados = false;
+      this.resultados = [];
+      this.totalizador = null;
+      if (m === 'antecip' && !this.cheques.length) this.iniciarCheques();
+    },
 
-    let totalRef = 0, totalJuros = 0, totalFinal = 0, valido = true, delay = 0;
+    /* ----- Cheques (antecip) ----- */
+    contadorCheque: 0,
 
-    items.forEach((item, i) => {
-      const dataBase = item.querySelector('.data-base-cheque').value;
-      const valorRaw = item.querySelector('.valor-cheque').dataset.raw || '0';
-      const valor    = parseInt(valorRaw) / 100;
-      const dataVenc = item.querySelector('.data-cheque').value;
-      const numero   = item.querySelector('.numero-cheque').value.trim();
+    iniciarCheques() {
+      this.contadorCheque = 1;
+      this.cheques = [this.criarCheque()];
+    },
 
-      if (!dataBase) { alert(`Informe a data base do cheque #${i+1}.`); valido=false; return; }
-      if (isNaN(valor) || valor <= 0 || !dataVenc) { alert(`Preencha cheque #${i+1}.`); valido=false; return; }
+    criarCheque() {
+      this.contadorCheque++;
+      const hoje = new Date().toISOString().split('T')[0];
+      const prazos = [30, 60, 90];
+      const sug = prazos[(this.contadorCheque - 1) % 3] || 30;
+      const d = new Date(hoje + 'T12:00:00');
+      d.setDate(d.getDate() + sug);
+      const dataSug = d.toISOString().split('T')[0];
 
-      const base = new Date(dataBase + 'T12:00:00');
-      const dias = Math.round((new Date(dataVenc+'T12:00:00') - base) / 86400000);
-      if (dias <= 0) { alert(`Vencimento do cheque #${i+1} deve ser futuro.`); valido=false; return; }
+      return {
+        id: this.contadorCheque,
+        dataBase: hoje,
+        dataVenc: dataSug,
+        valorCents: 0,
+        valorDisplay: '',
+        numero: ''
+      };
+    },
 
-      const desconto = tipoCalc === 'simples'
-        ? valor * taxaDiaria * dias
-        : valor * (1 - Math.pow(1/(1+taxaDiaria), dias));
-      const liquido = valor - desconto - tarifa;
-      const taxaEf  = (desconto/valor*100).toFixed(2);
+    addCheque() {
+      this.cheques.push(this.criarCheque());
+    },
 
-      totalRef   += valor;
-      totalJuros += desconto + tarifa;
-      totalFinal += liquido;
+    removerCheque(i) {
+      this.cheques.splice(i, 1);
+    },
 
-      const res = document.createElement('div');
-      res.className = 'resultado-cheque';
-      res.style.animationDelay = (delay*0.08)+'s';
-      const tituloCheque = numero ? `Cheque nº ${numero}` : `Cheque #${String(i+1).padStart(2,'0')}`;
-      res.innerHTML = `
-        <div class="res-header">
-          <div><div class="res-titulo">${tituloCheque} — ${dias} dias</div>
-            <div class="res-valor-original">R$ ${fmt(valor)}</div></div>
-          <div class="res-badge">${fmtData(dataVenc)}</div>
-        </div>
-        <div class="res-grid">
-          <div class="res-item"><div class="res-label">Desconto</div><div class="res-num clr-vermelho">− R$ ${fmt(desconto)}</div></div>
-          <div class="res-item"><div class="res-label">Tarifa</div><div class="res-num clr-amarelo">− R$ ${fmt(tarifa)}</div></div>
-          <div class="res-item"><div class="res-label">Taxa efetiva</div><div class="res-num clr-amarelo">${taxaEf}%</div></div>
-          <div class="res-item" style="grid-column:1/-1;margin-top:10px;padding-top:10px;border-top:1px solid var(--cinza-borda)">
-            <div class="res-label">Você recebe hoje</div>
-            <div class="res-num clr-verde" style="font-size:19px">R$ ${fmt(liquido)}</div>
-          </div>
-        </div>`;
-      resultDiv.appendChild(res);
-      delay++;
-    });
-    if (!valido) return;
+    /* ----- Antecip: calcular ----- */
+    calcularAntecip() {
+      const taxaM = parseDecimalBR(this.taxaMensal);
+      if (isNaN(taxaM) || taxaM <= 0) { alert('Informe a taxa de juros.'); return; }
+      if (!this.cheques.length) { alert('Adicione ao menos um cheque.'); return; }
 
-    document.getElementById('atvBruto').textContent = 'R$ '+fmt(totalRef);
-    document.getElementById('atvDesc').textContent  = '−R$ '+fmt(totalJuros);
-    document.getElementById('atvLiq').textContent   = 'R$ '+fmt(totalFinal);
-    const perda = (totalJuros/totalRef*100).toFixed(2);
-    document.getElementById('atvNota').innerHTML =
-      `Você cede <strong style="color:var(--vermelho)">R$ ${fmt(totalJuros)}</strong> (${perda}%) para receber
-       <strong style="color:var(--verde)">R$ ${fmt(totalFinal)}</strong> hoje.`;
+      const taxaDiaria = taxaM / 30 / 100;
+      const tarifa = parseFloat(this.tarifa) || 0;
+      let totalBruto = 0, totalJuros = 0, totalLiq = 0;
+      const resultados = [];
 
-    const sec = document.getElementById('resultadosAntecip');
-    sec.style.display = 'block';
-    sec.scrollIntoView({behavior:'smooth', block:'start'});
+      for (let i = 0; i < this.cheques.length; i++) {
+        const ch = this.cheques[i];
+        if (!ch.dataBase || !ch.dataVenc || !ch.valorCents) {
+          alert('Preencha o cheque #' + (i + 1) + '.');
+          return;
+        }
 
-    const btnImp = document.getElementById('btnImprimirRecibo');
-    btnImp.style.display = '';
-    btnImp.onclick = imprimirReciboAntecip;
-    btnImp.textContent = '🖨️ Imprimir Recibo';
-  }
+        const valor = ch.valorCents / 100;
+        const base = new Date(ch.dataBase + 'T12:00:00');
+        const venc = new Date(ch.dataVenc + 'T12:00:00');
+        const dias = Math.round((venc - base) / 86400000);
 
-  /* ─── VENDA A PRAZO: tabela de parcelas ─── */
-  function iniciarLinhasParcela() {
-    addLinhaParcela(); // 1x
-    addLinhaParcela(); // 2x
-    addLinhaParcela(); // 3x
-  }
+        if (dias <= 0) {
+          alert('Vencimento do cheque #' + (i + 1) + ' deve ser futuro.');
+          return;
+        }
 
-  function addLinhaParcela() {
-    numLinhasParcela++;
-    const n = numLinhasParcela;
-    const tbody = document.getElementById('tabelaParcelas');
-    const tr = document.createElement('tr');
-    tr.className = 'parcela-row';
-    tr.id = 'parcela-' + n;
-    tr.innerHTML = `
-      <td><span class="parcela-badge">${n}×</span></td>
-      <td>
-        <div style="font-size:11px;color:var(--texto-suave);font-style:italic;padding:4px 0">
-          calculado automaticamente
-        </div>
-      </td>
-      <td><div class="parcela-resultado" id="pCada-${n}">—</div></td>
-      <td><div class="parcela-resultado" id="pTotal-${n}">—</div></td>
-      <td>
-        ${n > 1
-          ? `<button class="btn-remove" style="width:36px;height:36px;font-size:15px" onclick="removeLinha(${n})" title="Remover">×</button>`
-          : '<div style="width:36px"></div>'}
-      </td>`;
-    tbody.appendChild(tr);
-  }
+        const desconto = this.tipoCalc === 'simples'
+          ? valor * taxaDiaria * dias
+          : valor * (1 - Math.pow(1 / (1 + taxaDiaria), dias));
+        const liquido = valor - desconto - tarifa;
+        const taxaEf = (desconto / valor * 100).toFixed(2);
 
-  function removeLinha(n) {
-    const el = document.getElementById('parcela-' + n);
-    if (el) el.remove();
-  }
+        totalBruto += valor;
+        totalJuros += desconto + tarifa;
+        totalLiq += liquido;
 
-  function calcularVenda() {
-    const vista   = getValorVista();
-    const prazo1  = parseInt(document.getElementById('vPrazo1').value);
-    const taxa    = parseDecimalBR(document.getElementById('vTaxa').value);
-    const tipo    = document.getElementById('vTipoCalc').value;
+        const num = ch.numero || '#' + String(i + 1).padStart(2, '0');
+        resultados.push({
+          num, dias,
+          valor: fmt(valor),
+          dataVenc: fmtData(ch.dataVenc),
+          desconto: fmt(desconto),
+          tarifa: fmt(tarifa),
+          taxaEf,
+          liquido: fmt(liquido),
+          delay: i * 0.08
+        });
+      }
 
-    if (isNaN(vista) || vista <= 0)             { alert('Informe o valor à vista.'); return; }
-    if (isNaN(prazo1) || prazo1 < 0 || prazo1 > 30) { alert('Prazo do 1º cheque deve ser entre 0 e 30 dias.'); return; }
-    if (isNaN(taxa) || taxa <= 0)               { alert('Informe a taxa de juros.'); return; }
+      const perda = (totalJuros / totalBruto * 100).toFixed(2);
+      const notaHtml = 'Você cede <strong style="color:var(--vermelho-carim)">R$ '
+        + fmt(totalJuros) + '</strong> (' + perda + '%) para receber '
+        + '<strong style="color:var(--verde-claro)">R$ ' + fmt(totalLiq) + '</strong> hoje.';
+      this.resultados = resultados;
+      this.totalizador = {
+        bruto: 'R$ ' + fmt(totalBruto),
+        desc: '−R$ ' + fmt(totalJuros),
+        liq: 'R$ ' + fmt(totalLiq),
+        perda,
+        notaHtml
+      };
+      this.mostrandoResultados = true;
 
-    const taxaDiaria = taxa / 30 / 100;
-    const rows = document.querySelectorAll('.parcela-row');
-    if (!rows.length) { alert('Adicione ao menos uma linha de parcelamento.'); return; }
+      this.$nextTick(() => {
+        const el = document.getElementById('resultados');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    },
 
-    const intervDias = 30;
-    const hoje = new Date(); hoje.setHours(12,0,0,0);
-    const d1   = new Date(hoje); d1.setDate(d1.getDate() + prazo1);
+    /* ----- Parcelas (venda) ----- */
+    addParcela() {
+      const n = this.parcelas.length + 1;
+      this.parcelas.push({ n });
+    },
 
-    const resDiv = document.getElementById('vResConteudo');
-    resDiv.innerHTML = '';
+    removerParcela(i) {
+      this.parcelas.splice(i, 1);
+    },
 
-    rows.forEach((row, idx) => {
-      const numParc = parseInt(row.querySelector('.parcela-badge').textContent);
-      const valorPorCheque_vista = vista / numParc;
+    /* ----- Venda: calcular ----- */
+    calcularVenda() {
+      const vista = this.valorVistaCents / 100;
+      if (isNaN(vista) || vista <= 0) { alert('Informe o valor à vista.'); return; }
 
-      let totalCheques = 0;
-      let datas = [];
-      const cheques = [];
+      const taxaM = parseDecimalBR(this.taxaVenda);
+      if (isNaN(taxaM) || taxaM <= 0) { alert('Informe a taxa de juros.'); return; }
+
+      if (this.prazo1 < 0 || this.prazo1 > 30) {
+        alert('Prazo do 1º cheque deve ser entre 0 e 30 dias.');
+        return;
+      }
+      if (!this.parcelas.length) { alert('Adicione ao menos uma opção.'); return; }
+
+      const taxaDiaria = taxaM / 30 / 100;
+      const hoje = new Date();
+      hoje.setHours(12, 0, 0, 0);
+      const d1 = new Date(hoje);
+      d1.setDate(d1.getDate() + this.prazo1);
+      const intervalo = 30;
+
+      const resultados = [];
+
+      for (let i = 0; i < this.parcelas.length; i++) {
+        const numParc = this.parcelas[i].n;
+        const valorPor = vista / numParc;
+        let totalCheques = 0;
+        const cheques = [];
+        const datasList = [];
+
+        for (let k = 0; k < numParc; k++) {
+          const dv = new Date(d1);
+          dv.setDate(dv.getDate() + k * intervalo);
+          const dias = Math.round((dv - hoje) / 86400000);
+
+          const vc = this.tipoCalcVenda === 'simples'
+            ? valorPor * (1 + taxaDiaria * dias)
+            : valorPor * Math.pow(1 + taxaDiaria, dias);
+          totalCheques += vc;
+          cheques.push({ k: k + 1, dv, dias, vc: fmt(vc) });
+          datasList.push(fmtDataObj(dv) + ' (' + dias + 'd)');
+        }
+
+        const acrescimo = totalCheques - vista;
+        const pct = (acrescimo / vista * 100).toFixed(2);
+
+        // Atualizar a parcela na tabela
+        this.parcelas[i].vencimentos = datasList.join('<br>');
+        this.parcelas[i].cada = 'R$ ' + fmt(totalCheques);
+        this.parcelas[i].total = 'R$ ' + fmt(totalCheques);
+
+        resultados.push({
+          numParc, cheques, acrescimo, pct,
+          total: fmt(totalCheques),
+          vista: fmt(vista)
+        });
+      }
+
+      this.resultados = resultados;
+      this.totalizador = null;
+      this.mostrandoResultados = true;
+
+      this.$nextTick(() => {
+        const el = document.getElementById('resultados');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    },
+
+    /* ----- Dispatcher ----- */
+    calcular() {
+      if (this.modo === 'antecip') this.calcularAntecip();
+      else this.calcularVenda();
+    },
+
+    /* ----- PDF ----- */
+    imprimirReciboAntecip() {
+      if (!window.jspdf) { alert('Biblioteca de PDF não carregou.'); return; }
+
+      const itens = [];
+      for (const ch of this.cheques) {
+        if (!ch.dataBase || !ch.dataVenc || !ch.valorCents) continue;
+        const valor = ch.valorCents / 100;
+        const base = new Date(ch.dataBase + 'T12:00:00');
+        const venc = new Date(ch.dataVenc + 'T12:00:00');
+        const dias = Math.round((venc - base) / 86400000);
+        itens.push({ valor, dataBase: ch.dataBase, dataVenc: ch.dataVenc, dias, numero: ch.numero });
+      }
+
+      if (!itens.length) { alert('Nenhum cheque para imprimir.'); return; }
+
+      gerarPDFAntecip({
+        tipo: 'antecip',
+        data: new Date().toLocaleDateString('pt-BR'),
+        taxa: this.taxaMensal,
+        tipoCalc: this.tipoCalc === 'simples' ? 'Simples' : 'Composto',
+        tarifa: this.tarifa,
+        itens,
+        totalBruto: this.totalizador.bruto,
+        totalDesc: this.totalizador.desc,
+        totalLiq: this.totalizador.liq
+      });
+    },
+
+    imprimirReciboVenda(idx) {
+      if (!window.jspdf) { alert('Biblioteca de PDF não carregou.'); return; }
+
+      const r = this.resultados[idx];
+      if (!r) return;
+
+      const vista = this.valorVistaCents / 100;
+      const taxaDiaria = parseDecimalBR(this.taxaVenda) / 30 / 100;
+      const hoje = new Date();
+      hoje.setHours(12, 0, 0, 0);
+      const d1 = new Date(hoje);
+      d1.setDate(d1.getDate() + this.prazo1);
+
+      const chequesPdf = [];
+      const numParc = r.numParc;
+      const valorPor = vista / numParc;
+      let totalPdf = 0;
 
       for (let k = 0; k < numParc; k++) {
         const dv = new Date(d1);
-        dv.setDate(dv.getDate() + k * intervDias);
+        dv.setDate(dv.getDate() + k * 30);
         const dias = Math.round((dv - hoje) / 86400000);
-
-        const vc = tipo === 'simples'
-          ? valorPorCheque_vista * (1 + taxaDiaria * dias)
-          : valorPorCheque_vista * Math.pow(1 + taxaDiaria, dias);
-        totalCheques += vc;
-        datas.push(`${fmtDataObj(dv)} <span style="opacity:.5">(${dias}d)</span>`);
-        cheques.push({ k: k+1, dv, dias, vc });
+        const vc = this.tipoCalcVenda === 'simples'
+          ? valorPor * (1 + taxaDiaria * dias)
+          : valorPor * Math.pow(1 + taxaDiaria, dias);
+        totalPdf += vc;
+        chequesPdf.push({ k: k + 1, dv, dias, vc });
       }
 
-      const idSuffix = row.id.replace('parcela-','');
-      const elTotal = document.getElementById('pTotal-'+idSuffix);
-      const elCada  = document.getElementById('pCada-'+idSuffix);
+      const acrescimoPdf = totalPdf - vista;
 
-      row.querySelectorAll('td')[1].innerHTML = `<div class="vres-datas">${datas.join('<br>')}</div>`;
-
-      elCada.textContent = numParc === 1 ? 'R$ ' + fmt(totalCheques) : 'ver datas \u2192';
-      elCada.className = 'parcela-resultado calculado';
-      elTotal.textContent = 'R$ ' + fmt(totalCheques);
-      elTotal.className = 'parcela-resultado calculado';
-
-      const acrescimo = totalCheques - vista;
-      const pct = (acrescimo/vista*100).toFixed(2);
-      elTotal.title = `Acréscimo: R$ ${fmt(acrescimo)} (${pct}%)`;
-
-      // Bloco detalhado por opção de parcelamento
-      const block = document.createElement('div');
-      block.className = 'vres-resp-block';
-      block.style.cssText = 'margin-bottom:18px;padding-bottom:18px;' + (idx === rows.length - 1 ? '' : 'border-bottom:1px solid var(--cinza-borda)');
-
-      const linhas = cheques.map(c => `
-        <tr class="vres-row">
-          <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);font-weight:600">#${String(c.k).padStart(2,'0')}</td>
-          <td style="font-size:12px;color:var(--texto-suave)">${fmtDataObj(c.dv)}</td>
-          <td style="font-size:12px;color:var(--texto-suave)">${c.dias} dias</td>
-          <td style="font-family:'DM Mono',monospace;font-size:14px;color:var(--azul);text-align:right;font-weight:600">R$ ${fmt(c.vc)}</td>
-        </tr>`).join('');
-
-      block.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div>
-            <div class="vres-parcelas" style="margin-bottom:4px">${numParc}× CHEQUE${numParc>1?'S':''}</div>
-            <div style="font-size:13px;color:var(--texto-suave)">À vista: <strong style="color:var(--texto)">R$ ${fmt(vista)}</strong></div>
-          </div>
-          <button class="btn-imprimir-mini" onclick="imprimirReciboVenda(${idx})" title="Imprimir este plano">🖨️</button>
-        </div>
-        <table class="vres-table">
-          <thead><tr>
-            <th>Cheque</th>
-            <th>Vencimento</th>
-            <th>Dias</th>
-            <th style="text-align:right">Valor do cheque</th>
-          </tr></thead>
-          <tbody>${linhas}</tbody>
-        </table>
-        <div class="vres-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:12px;background:var(--cinza);border-radius:8px">
-          <div style="font-size:12px;color:var(--texto-suave)">
-            Acréscimo: <span style="color:var(--amarelo);font-family:'DM Mono',monospace">+R$ ${fmt(acrescimo)} (${pct}%)</span>
-          </div>
-          <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:18px;color:var(--azul)">
-            Total: R$ ${fmt(totalCheques)}
-          </div>
-        </div>`;
-      resDiv.appendChild(block);
-    });
-
-    document.getElementById('resultadosVenda').style.display = 'block';
-    document.getElementById('vTotalizador').style.display    = 'none';
-    document.getElementById('resultadosVenda').scrollIntoView({behavior:'smooth',block:'start'});
-
-    document.getElementById('btnImprimirRecibo').style.display = 'none';
-  }
-
-  /* ─── UTILS ─── */
-  function fmt(v) { return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  function parseDecimalBR(s) {
-    s = String(s).trim();
-    if (!s) return NaN;
-    // Se houver vírgula, ela é o separador decimal e ponto é milhar
-    if (s.includes(',')) return parseFloat(s.replace(/\./g,'').replace(',','.'));
-    // Sem vírgula: ponto (se houver) é decimal
-    return parseFloat(s);
-  }
-  function fmtData(s) { const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; }
-  function fmtDataObj(d) {
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  }
-
-  /* ─── MÁSCARA DE MOEDA ─── */
-  function mascaraMoeda(input) {
-    let raw = input.value.replace(/\D/g, '');
-    if (raw === '') { input.dataset.raw = '0'; input.value = ''; return; }
-    input.dataset.raw = raw;
-    const cents = parseInt(raw);
-    const reais = Math.floor(cents / 100);
-    const dec = (cents % 100).toString().padStart(2, '0');
-    const intFormat = reais.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    input.value = intFormat + ',' + dec;
-  }
-
-  function mascaraMoedaBlur(input) {
-    if (input.value === '' || input.value === 'R$ 0,00') return;
-    mascaraMoeda(input);
-  }
-
-  function mascaraMoedaFocus(input) {
-    const raw = input.dataset.raw || '0';
-    const cents = parseInt(raw);
-    if (cents === 0) { input.value = ''; return; }
-    input.value = (cents / 100).toFixed(2).replace('.', ',');
-  }
-
-  function getValorVista() {
-    const raw = document.getElementById('vValorVista').dataset.raw || '0';
-    return parseFloat(raw) / 100;
-  }
-
-  /* ─── IMPRIMIR RECIBO ─── */
-  let dadosRecibo = null;
-
-  function gerarReciboAntecip() {
-    const itens = [];
-    document.querySelectorAll('#listaCheques .cheque-item').forEach((item) => {
-      const dataVenc = item.querySelector('.data-cheque').value;
-      const dataBase = item.querySelector('.data-base-cheque').value;
-      const valorRaw = item.querySelector('.valor-cheque').dataset.raw || '0';
-      const valor    = parseInt(valorRaw) / 100;
-      const numero   = item.querySelector('.numero-cheque').value.trim();
-      if (!dataBase || !dataVenc || valor <= 0) return;
-      const base = new Date(dataBase + 'T12:00:00');
-      const dias = Math.round((new Date(dataVenc + 'T12:00:00') - base) / 86400000);
-      itens.push({ valor, dataBase, dataVenc, dias, numero });
-    });
-
-    const taxaMensal = document.getElementById('taxaMensal').value;
-    const tipoCalc = document.getElementById('tipoCalc').value === 'simples' ? 'Simples' : 'Composto';
-    const tarifa = document.getElementById('tarifa').value || '0';
-
-    dadosRecibo = {
-      tipo: 'antecip',
-      data: new Date().toLocaleDateString('pt-BR'),
-      taxa: taxaMensal, tipoCalc, tarifa, itens,
-      totalBruto: document.getElementById('atvBruto').textContent,
-      totalDesc: document.getElementById('atvDesc').textContent,
-      totalLiq: document.getElementById('atvLiq').textContent
-    };
-  }
-
-  function gerarReciboVenda(idx) {
-    const vista = getValorVista();
-    const prazo1 = parseInt(document.getElementById('vPrazo1').value) || 30;
-    const taxa = document.getElementById('vTaxa').value;
-    const tipo = document.getElementById('vTipoCalc').value === 'simples' ? 'Simples' : 'Composto';
-    const rows = document.querySelectorAll('.parcela-row');
-    const row = rows[idx];
-    if (!row) return;
-    const numParc = parseInt(row.querySelector('.parcela-badge').textContent);
-    const hoje = new Date(); hoje.setHours(12, 0, 0, 0);
-    const d1 = new Date(hoje); d1.setDate(d1.getDate() + prazo1);
-    const valorPorCheque = vista / numParc;
-    const taxaDiaria = parseDecimalBR(taxa) / 30 / 100;
-
-    const cheques = [];
-    let total = 0;
-    for (let k = 0; k < numParc; k++) {
-      const dv = new Date(d1);
-      dv.setDate(dv.getDate() + k * 30);
-      const dias = Math.round((dv - hoje) / 86400000);
-      const vc = tipo === 'Simples'
-        ? valorPorCheque * (1 + taxaDiaria * dias)
-        : valorPorCheque * Math.pow(1 + taxaDiaria, dias);
-      total += vc;
-      cheques.push({ k: k + 1, dv, dias, vc });
+      gerarPDFVenda({
+        tipo: 'venda',
+        data: new Date().toLocaleDateString('pt-BR'),
+        vista,
+        taxa: this.taxaVenda,
+        tipoCalc: this.tipoCalcVenda === 'simples' ? 'Simples' : 'Composto',
+        numParc,
+        cheques: chequesPdf,
+        total: totalPdf,
+        acrescimo: acrescimoPdf,
+        pct: (acrescimoPdf / vista * 100).toFixed(2)
+      });
     }
+  }));
 
-    dadosRecibo = {
-      tipo: 'venda',
-      data: new Date().toLocaleDateString('pt-BR'),
-      vista, taxa, tipoCalc: tipo, numParc, cheques, total,
-      acrescimo: total - vista,
-      pct: ((total - vista) / vista * 100).toFixed(2)
-    };
-  }
+});
 
-
-  /* ─── PDF (jsPDF) ─── */
-  function sanePDF(s) {
-    return String(s).replace(/[‐-―−]/g, '-');
-  }
-
-  function abrirPDF(doc, filename) {
-    try {
-      const blob = doc.output('blob');
-      const url = URL.createObjectURL(blob);
-      const win = window.open(url, '_blank');
-      if (!win) doc.save(filename);
-    } catch (e) {
-      doc.save(filename);
+/* ═══════════════════════════════════════
+   PÓS-INICIALIZAÇÃO
+   ═══════════════════════════════════════ */
+// Verificação pós-Alpine para forçar logout se token inválido
+setTimeout(async () => {
+  if (!verificarAutenticacao()) return;
+  try {
+    const auth = JSON.parse(localStorage.getItem(LS_AUTH));
+    const status = await consumirToken(auth.token);
+    if (status === 'revogado' || status === 'usado') {
+      Alpine.store('app').bloqueado = true;
     }
-  }
-
-  function imprimirReciboAntecip() {
-    if (!window.jspdf) { alert('Biblioteca de PDF não carregou. Verifique a conexão.'); return; }
-    gerarReciboAntecip();
-    if (!dadosRecibo) return;
-    const d = dadosRecibo;
-
-    const { jsPDF } = window.jspdf;
-    const W = 75, H = 175, M = 3;
-    const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
-    const cx = W / 2, left = M, right = W - M;
-    let y = M + 2;
-
-    function checkPage(needed) {
-      if (y + needed > H - M) { doc.addPage(); y = M + 2; }
-    }
-    function divider(gray) {
-      doc.setDrawColor(gray !== undefined ? gray : 0);
-      doc.setLineWidth(0.2);
-      doc.line(left, y, right, y);
-    }
-
-    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
-    doc.text('RECIBO DE ANTECIPAÇÃO', cx, y, { align: 'center' });
-    y += 4.5;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-    doc.text(`Gerado em ${d.data}`, cx, y, { align: 'center' });
-    y += 3.2;
-
-    doc.text(`Taxa: ${d.taxa}% a.m. (${d.tipoCalc})`, cx, y, { align: 'center' });
-    y += 2.8;
-    doc.text(`Tarifa: R$ ${fmt(parseFloat(d.tarifa) || 0)} por cheque`, cx, y, { align: 'center' });
-    y += 3.5;
-
-    divider(); y += 3;
-
-    d.itens.forEach(ch => {
-      checkPage(11);
-      doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
-      const labelCheque = `CHEQUE${ch.numero ? ' Nº ' + ch.numero : ''}`;
-      doc.text(labelCheque, left, y);
-      doc.text(`R$ ${fmt(ch.valor)}`, right, y, { align: 'right' });
-      y += 3;
-
-      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-      doc.text('Data Base', left, y);
-      doc.text(`${fmtData(ch.dataBase)}`, right, y, { align: 'right' });
-      y += 2.5;
-
-      doc.text('Vencimento', left, y);
-      doc.text(`${fmtData(ch.dataVenc)} (${ch.dias}d)`, right, y, { align: 'right' });
-      y += 2.5;
-
-      divider(220); y += 2.5;
-    });
-
-    y += 0.3; divider(); y += 3.4;
-
-    function resumo(label, valor) {
-      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-      doc.text(label, left, y);
-      doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
-      doc.text(sanePDF(valor), right, y, { align: 'right' });
-      y += 3.4;
-    }
-    resumo('TOTAL DOS CHEQUES', d.totalBruto);
-    resumo('TOTAL DESCONTADO', d.totalDesc);
-    resumo('VOCÊ RECEBE HOJE', d.totalLiq);
-
-    y += 0.3; divider(); y += 3.5;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
-    doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
-    y += 2.5;
-    doc.text(versaoCompleta(), cx, y, { align: 'center' });
-
-    abrirPDF(doc, 'recibo-antecipacao.pdf');
-  }
-
-  function imprimirReciboVenda(idx) {
-    if (!window.jspdf) { alert('Biblioteca de PDF não carregou. Verifique a conexão.'); return; }
-    gerarReciboVenda(idx);
-    if (!dadosRecibo) return;
-    const d = dadosRecibo;
-
-    const { jsPDF } = window.jspdf;
-    const W = 75, H = 175, M = 3;
-    const doc = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait' });
-    const cx = W / 2, left = M, right = W - M;
-    let y = M + 2;
-
-    function checkPage(needed) {
-      if (y + needed > H - M) { doc.addPage(); y = M + 2; }
-    }
-    function divider(gray) {
-      doc.setDrawColor(gray !== undefined ? gray : 0);
-      doc.setLineWidth(0.2);
-      doc.line(left, y, right, y);
-    }
-
-    doc.setFont('courier', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
-    doc.text('RECIBO - VENDA A PRAZO', cx, y, { align: 'center' });
-    y += 4.5;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-    doc.text(`Gerado em ${d.data}`, cx, y, { align: 'center' });
-    y += 4;
-
-    doc.text('VALOR À VISTA', left, y);
-    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
-    doc.text(`R$ ${fmt(d.vista)}`, right, y, { align: 'right' });
-    y += 3.5;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-    doc.text(`Taxa: ${d.taxa || '-'}% a.m. (${d.tipoCalc})`, cx, y, { align: 'center' });
-    y += 3.5;
-
-    divider(); y += 3;
-
-    doc.setFont('courier', 'bold'); doc.setFontSize(7.5); doc.setTextColor(85);
-    doc.text(`${d.numParc}x CHEQUE${d.numParc > 1 ? 'S' : ''} - a cada 30 dias`, cx, y, { align: 'center' });
-    y += 3.5;
-
-    d.cheques.forEach(c => {
-      checkPage(8);
-      doc.setFont('courier', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
-      doc.text(`#${String(c.k).padStart(2, '0')}`, left, y);
-      doc.text(`R$ ${fmt(c.vc)}`, right, y, { align: 'right' });
-      y += 3;
-
-      doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-      doc.text(`Venc: ${fmtDataObj(c.dv)}`, left, y);
-      doc.text(`${c.dias} dias`, right, y, { align: 'right' });
-      y += 2.5;
-
-      divider(220); y += 2.5;
-    });
-
-    y += 0.3; divider(); y += 3.4;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-    doc.text('TOTAL NOS CHEQUES', left, y);
-    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
-    doc.text(`R$ ${fmt(d.total)}`, right, y, { align: 'right' });
-    y += 3.4;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(7); doc.setTextColor(85);
-    doc.text('ACRÉSCIMO', left, y);
-    doc.setFont('courier', 'bold'); doc.setFontSize(8.5); doc.setTextColor(0);
-    doc.text(`+R$ ${fmt(d.acrescimo)} (${d.pct}%)`, right, y, { align: 'right' });
-    y += 3.4;
-
-    y += 0.3; divider(); y += 3.5;
-
-    doc.setFont('courier', 'normal'); doc.setFontSize(6); doc.setTextColor(150);
-    doc.text('Calculadora de Cheques Pré-datados', cx, y, { align: 'center' });
-    y += 2.5;
-    doc.text(versaoCompleta(), cx, y, { align: 'center' });
-
-    abrirPDF(doc, 'recibo-venda-a-prazo.pdf');
-  }
-
-  function logout() {
-    pararVigilanciaToken();
-    localStorage.removeItem(LS_AUTH);
-    document.getElementById('painelAdmin').classList.remove('mostrar');
-    document.getElementById('resultadosAntecip').style.display = 'none';
-    document.getElementById('resultadosVenda').style.display = 'none';
-    document.getElementById('btnImprimirRecibo').style.display = 'none';
-    const tela = document.getElementById('telaBloqueio');
-    if (tela) { tela.style.display = ''; }
-    const input = document.getElementById('inputToken');
-    if (input) { input.value = ''; }
-    const erro = document.getElementById('bloqueioErro');
-    if (erro) { erro.style.display = 'none'; }
-    atualizarVersoes();
-  }
-
-  window.onload = async () => {
-    if (verificarAutenticacao()) {
-      try {
-        const auth = JSON.parse(localStorage.getItem(LS_AUTH));
-        const status = await consumirToken(auth.token);
-        if (status === 'revogado' || status === 'usado') {
-          logout();
-        } else {
-          mostrarApp();
-        }
-      } catch (e) {
-        // offline — mantém acesso
-        mostrarApp();
-      }
-    } else {
-      atualizarVersoes();
-    }
-
-    const inputToken = document.getElementById('inputToken');
-    inputToken.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') entrarComToken();
-    });
-
-    // Prazo padrão do 1º cheque = 30 dias
-    document.getElementById('vPrazo1').value = 30;
-
-    // Inicializa parcelas da venda a prazo (modo padrão)
-    iniciarLinhasParcela();
-  };
+  } catch(e) { /* offline */ }
+}, 2000);
 </script>
+
 </body>
 </html>
